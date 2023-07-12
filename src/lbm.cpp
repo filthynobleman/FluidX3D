@@ -417,6 +417,7 @@ string LBM_Domain::device_defines() const { return
 
 #ifdef GRAPHICS
 void LBM_Domain::Graphics::allocate(Device& device) {
+	
 	bitmap = Memory<int>(device, camera.width*camera.height);
 	zbuffer = Memory<int>(device, camera.width*camera.height, 1u, lbm->get_D()>1u); // if there are multiple domains, allocate zbuffer also on host side
 	camera_parameters = Memory<float>(device, 15u);
