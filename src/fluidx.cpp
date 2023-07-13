@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     std::cout << "Selected vismode" << std::endl;
 
     uint i = 0;
-    while (i < 1000u) {
+    while (i < 5000u) {
         lbm.run(1u);
         // std::cout << lbm.rho.x[0] << std::endl;
         i++;

@@ -9,10 +9,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/bin")
 
 # # MSVC complains about shared libraries
-# if(MSVC)
-#     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-#     set(BUILD_SHARED_LIBS TRUE)
-# endif()
+if(MSVC)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+    set(BUILD_SHARED_LIBS TRUE)
+endif()
 
 
 # Include external dependencies
@@ -26,13 +26,11 @@ include_directories("${CMAKE_COURCE_DIR}/src")
 
 
 # Source file to library
-add_library(FX3D STATIC "${CMAKE_SOURCE_DIR}/src/graphics.cpp"
+add_library(FX3D SHARED "${CMAKE_SOURCE_DIR}/src/graphics.cpp"
                         "${CMAKE_SOURCE_DIR}/src/info.cpp"
                         "${CMAKE_SOURCE_DIR}/src/kernel.cpp"
                         "${CMAKE_SOURCE_DIR}/src/lbm.cpp"
                         "${CMAKE_SOURCE_DIR}/src/lodepng.cpp"
-                        # "${CMAKE_SOURCE_DIR}/src/setup.cpp"
-                        # "${CMAKE_SOURCE_DIR}/src/main.cpp"
                         "${CMAKE_SOURCE_DIR}/src/shapes.cpp")
 target_link_libraries(FX3D OpenCL::OpenCL)
 set_property(TARGET FX3D PROPERTY CXX_STANDARD 17) 
