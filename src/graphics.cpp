@@ -493,10 +493,10 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 	return DefWindowProc(window, message, wParam, lParam);
 }
 #ifdef GRAPHICS_CONSOLE
-int main(int argc, char* argv[]) { // call WinMain from dummy main function in order to have an additional console window
+/*int main(int argc, char* argv[]) { // call WinMain from dummy main function in order to have an additional console window
 	main_arguments = get_main_arguments(argc, argv);
 	return WinMain(GetModuleHandle(0), 0, GetCommandLineA(), SW_SHOWMINIMIZED);
-}
+}*/
 #endif // GRAPHICS_CONSOLE
 INT WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ PSTR, _In_ INT) {
 	WNDCLASS wndClass = { 0, WndProc, 0, 0, hInstance, LoadIcon(0, IDI_APPLICATION), LoadCursor(0, IDC_ARROW), (HBRUSH)GetStockObject(BLACK_BRUSH), 0, TEXT("WindowClass") };
@@ -751,7 +751,7 @@ int main(int argc, char* argv[]) {
 #endif // INTERACTIVE_GRAPHICS_ASCII
 
 #if !defined(INTERACTIVE_GRAPHICS) && !defined(INTERACTIVE_GRAPHICS_ASCII)
-int main(int argc, char* argv[]) {
+/*int main(int argc, char* argv[]) {
 	main_arguments = get_main_arguments(argc, argv);
 	camera = Camera(GRAPHICS_FRAME_WIDTH, GRAPHICS_FRAME_HEIGHT, 60u); // width and height must be divisible by 8
 	thread compute_thread(main_physics); // start main_physics() in a new thread
@@ -763,6 +763,6 @@ int main(int argc, char* argv[]) {
 	}
 	compute_thread.join();
 	return 0;
-}
+}**/
 #endif // no INTERACTIVE_GRAPHICS and no INTERACTIVE_GRAPHICS_ASCII
 #endif // GRAPHICS

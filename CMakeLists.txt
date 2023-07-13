@@ -31,7 +31,8 @@ add_library(FX3D STATIC "${CMAKE_SOURCE_DIR}/src/graphics.cpp"
                         "${CMAKE_SOURCE_DIR}/src/kernel.cpp"
                         "${CMAKE_SOURCE_DIR}/src/lbm.cpp"
                         "${CMAKE_SOURCE_DIR}/src/lodepng.cpp"
-                        "${CMAKE_SOURCE_DIR}/src/setup.cpp"
+                        # "${CMAKE_SOURCE_DIR}/src/setup.cpp"
+                        # "${CMAKE_SOURCE_DIR}/src/main.cpp"
                         "${CMAKE_SOURCE_DIR}/src/shapes.cpp")
 target_link_libraries(FX3D OpenCL::OpenCL)
 set_property(TARGET FX3D PROPERTY CXX_STANDARD 17) 
@@ -39,7 +40,7 @@ set_property(TARGET FX3D PROPERTY CXX_STANDARD 17)
 
 
 # Executable
-add_executable(FluidX3D "${CMAKE_SOURCE_DIR}/src/main.cpp")
+add_executable(FluidX3D "${CMAKE_SOURCE_DIR}/src/fluidx.cpp")
 target_link_libraries(FluidX3D FX3D OpenCL::OpenCL)
 set_property(TARGET FluidX3D PROPERTY CXX_STANDARD 17) 
 
