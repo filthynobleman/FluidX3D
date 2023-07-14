@@ -16,8 +16,8 @@ endif()
 
 
 # Include external dependencies
-# include_directories("${CMAKE_SOURCE_DIR}/src/OpenCL/include")
 include_directories("${CMAKE_SOURCE_DIR}/src/X11/include")
+include_directories("${CMAKE_SOURCE_DIR}/ext/json/include")
 
 find_package(OpenCL REQUIRED)
 if(${OpenCL_VERSION_MAJOR} EQUAL 1)
@@ -43,7 +43,8 @@ add_library(FX3D SHARED "${CMAKE_SOURCE_DIR}/src/graphics.cpp"
                         "${CMAKE_SOURCE_DIR}/src/lodepng.cpp"
                         "${CMAKE_SOURCE_DIR}/src/shapes.cpp"
                         "${CMAKE_SOURCE_DIR}/src/fx3d/settings.cpp"
-                        "${CMAKE_SOURCE_DIR}/src/fx3d/gsettings.cpp")
+                        "${CMAKE_SOURCE_DIR}/src/fx3d/gsettings.cpp"
+                        "${CMAKE_SOURCE_DIR}/src/fx3d/scenes.cpp")
 target_link_libraries(FX3D OpenCL::OpenCL)
 set_property(TARGET FX3D PROPERTY CXX_STANDARD 17) 
 
