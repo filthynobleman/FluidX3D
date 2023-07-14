@@ -1,10 +1,13 @@
 #pragma once
 
-#include "defines.hpp"
-#include "opencl.hpp"
-#include "graphics.hpp"
-#include "units.hpp"
-#include "info.hpp"
+#include <utils/defines.hpp>
+#include <utils/opencl.hpp>
+#include <utils/graphics.hpp>
+#include <utils/units.hpp>
+#include <fx3d/info.hpp>
+
+namespace fx3d
+{
 
 uint bytes_per_cell_host(); // returns the number of Bytes per cell allocated in host memory
 uint bytes_per_cell_device(); // returns the number of Bytes per cell allocated in device memory
@@ -37,27 +40,27 @@ private:
 	Kernel kernel_update_fields; // reads DDFs and updates (rho, u, T) in device memory
 	Memory<fpxx> fi; // LBM density distribution functions (DDFs); only exist in device memory
 	ulong t_last_update_fields = 0ull; // optimization to not call kernel_update_fields multiple times if (rho, u, T) are already up-to-date
-#ifdef FORCE_FIELD
+// #ifdef FORCE_FIELD
 	Kernel kernel_calculate_force_on_boundaries; // calculate forces from fluid on TYPE_S nodes
 	Kernel kernel_reset_force_field; // reset force field (also on TYPE_S nodes)
-#endif // FORCE_FIELD
-#ifdef MOVING_BOUNDARIES
+// #endif // FORCE_FIELD
+// #ifdef MOVING_BOUNDARIES
 	Kernel kernel_update_moving_boundaries; // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
-#endif // MOVING_BOUNDARIES
-#ifdef SURFACE
+// #endif // MOVING_BOUNDARIES
+// #ifdef SURFACE
 	Kernel kernel_surface_0; // additional kernel for computing mass conservation and mass flux computation
 	Kernel kernel_surface_1; // additional kernel for flag handling
 	Kernel kernel_surface_2; // additional kernel for flag handling
 	Kernel kernel_surface_3; // additional kernel for flag handling and mass conservation
 	Memory<float> mass; // fluid mass; phi=mass/rho
 	Memory<float> massex; // excess mass; used for mass conservation
-#endif // SURFACE
-#ifdef TEMPERATURE
+// #endif // SURFACE
+// #ifdef TEMPERATURE
 	Memory<fpxx> gi; // thermal DDFs
-#endif // TEMPERATURE
-#ifdef PARTICLES
+// #endif // TEMPERATURE
+// #ifdef PARTICLES
 	Kernel kernel_integrate_particles; // intgegrates particles forward in time and couples particles to fluid
-#endif // PARTICLES
+// #endif // PARTICLES
 
 	void allocate(Device& device); // allocate all memory for data fields on host and device and set up kernels
 	string device_defines() const; // returns preprocessor constants for embedding in OpenCL C code
@@ -66,18 +69,18 @@ public:
 	Memory<float> rho; // density of every node
 	Memory<float> u; // velocity of every node
 	Memory<uchar> flags; // flags of every node
-#ifdef FORCE_FIELD
+// #ifdef FORCE_FIELD
 	Memory<float> F; // individual force for every node
-#endif // FORCE_FIELD
-#ifdef SURFACE
+// #endif // FORCE_FIELD
+// #ifdef SURFACE
 	Memory<float> phi; // fill level of every node
-#endif // SURFACE
-#ifdef TEMPERATURE
+// #endif // SURFACE
+// #ifdef TEMPERATURE
 	Memory<float> T; // temperature of every node
-#endif // TEMPERATURE
-#ifdef PARTICLES
+// #endif // TEMPERATURE
+// #ifdef PARTICLES
 	Memory<float> particles; // particle positions
-#endif // PARTICLES
+// #endif // PARTICLES
 
 	Memory<char> transfer_buffer_p, transfer_buffer_m; // transfer buffers for multi-device domain communication, only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
 	Kernel kernel_transfer[enum_transfer_field::enum_transfer_field_length][2]; // for each field one extract and one insert kernel
@@ -91,21 +94,21 @@ public:
 	void enqueue_initialize(); // write all data fields to device and call kernel_initialize
 	void enqueue_stream_collide(); // call kernel_stream_collide to perform one LBM time step
 	void enqueue_update_fields(); // update fields (rho, u, T) manually
-#ifdef SURFACE
+// #ifdef SURFACE
 	void enqueue_surface_0();
 	void enqueue_surface_1();
 	void enqueue_surface_2();
 	void enqueue_surface_3();
-#endif // SURFACE
-#ifdef FORCE_FIELD
+// #endif // SURFACE
+// #ifdef FORCE_FIELD
 	void enqueue_calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S nodes
-#endif // FORCE_FIELD
-#ifdef MOVING_BOUNDARIES
+// #endif // FORCE_FIELD
+// #ifdef MOVING_BOUNDARIES
 	void enqueue_update_moving_boundaries(); // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
-#endif // MOVING_BOUNDARIES
-#ifdef PARTICLES
+// #endif // MOVING_BOUNDARIES
+// #ifdef PARTICLES
 	void enqueue_integrate_particles(const uint time_step_multiplicator=1u); // intgegrates particles forward in time and couples particles to fluid
-#endif // PARTICLES
+// #endif // PARTICLES
 
 	void increment_time_step(const uint steps=1u); // increment time step
 	void reset_time_step(); // reset time step
@@ -153,18 +156,18 @@ public:
 		Kernel kernel_graphics_streamline; // render streamlines
 		Kernel kernel_graphics_q; // render vorticity (Q-criterion)
 
-#ifdef SURFACE
+// #ifdef SURFACE
 		const string path_skybox = get_exe_path()+"/skybox/skybox8k.png";
 		Image* skybox_image = nullptr;
 		Memory<int> skybox; // skybox for free surface raytracing
 		Kernel kernel_graphics_rasterize_phi; // rasterize free surface
 		Kernel kernel_graphics_raytrace_phi; // raytrace free surface
 		Image* get_skybox_image() const { return skybox_image; }
-#endif // SURFACE
+// #endif // SURFACE
 
-#ifdef PARTICLES
+// #ifdef PARTICLES
 		Kernel kernel_graphics_particles;
-#endif // PARTICLES
+// #endif // PARTICLES
 
 		ulong t_last_rendered_frame = 0ull; // optimization to not call draw_frame() multiple times if camera_parameters and LBM time step are unchanged
 		bool update_camera(); // update camera_parameters and return if they are changed from their previous state
@@ -173,15 +176,15 @@ public:
 		Graphics() {} // default constructor
 		Graphics(LBM_Domain* lbm) {
 			this->lbm = lbm;
-#ifdef SURFACE
+// #ifdef SURFACE
 			skybox_image = read_png(path_skybox);
-#endif // SURFACE
+// #endif // SURFACE
 		}
 		Graphics& operator=(const Graphics& graphics) { // copy assignment
 			lbm = graphics.lbm;
-#ifdef SURFACE
+// #ifdef SURFACE
 			skybox_image = graphics.get_skybox_image();
-#endif // SURFACE
+// #endif // SURFACE
 			return *this;
 		}
 		void allocate(Device& device); // allocate memory for bitmap and zbuffer
@@ -211,13 +214,13 @@ private:
 
 	void communicate_fi();
 	void communicate_rho_u_flags();
-#ifdef SURFACE
+// #ifdef SURFACE
 	void communicate_flags();
 	void communicate_phi_massex_flags();
-#endif // SURFACE
-#ifdef TEMPERATURE
+// #endif // SURFACE
+// #ifdef TEMPERATURE
 	void communicate_gi();
-#endif // TEMPERATURE
+// #endif // TEMPERATURE
 
 public:
 	template<typename T> class Memory_Container { // does not hold any data itsef, just links to LBM_Domain data
@@ -337,9 +340,12 @@ public:
 		inline const T operator()(const ulong i) const { return reference(i, 0u); }
 		inline const T operator()(const ulong i, const uint dimension) const { return reference(i, dimension); } // array of structures
 		inline void read_from_device() {
-#ifndef UPDATE_FIELDS
+// #ifndef UPDATE_FIELDS
+		if (!fx3d::Settings::IsFeatureEnabled(fx3d::Feature::UPDATE_FIELDS))
+		{
 			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) lbm->lbm[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
-#endif // UPDATE_FIELDS
+		}
+// #endif // UPDATE_FIELDS
 			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) buffers[domain]->enqueue_read_from_device();
 			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) buffers[domain]->finish_queue();
 		}
@@ -361,18 +367,18 @@ public:
 	Memory_Container<float> rho; // density of every node
 	Memory_Container<float> u; // velocity of every node
 	Memory_Container<uchar> flags; // flags of every node
-#ifdef FORCE_FIELD
+// #ifdef FORCE_FIELD
 	Memory_Container<float> F; // individual force for every node
-#endif // FORCE_FIELD
-#ifdef SURFACE
+// #endif // FORCE_FIELD
+// #ifdef SURFACE
 	Memory_Container<float> phi; // fill level of every node
-#endif // SURFACE
-#ifdef TEMPERATURE
+// #endif // SURFACE
+// #ifdef TEMPERATURE
 	Memory_Container<float> T; // temperature of every node
-#endif // TEMPERATURE
-#ifdef PARTICLES
+// #endif // TEMPERATURE
+// #ifdef PARTICLES
 	Memory<float>* particles; // particle positions
-#endif // PARTICLES
+// #endif // PARTICLES
 
 	LBM(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint Dy, const uint Dz, const float nu, const float fx=0.0f, const float fy=0.0f, const float fz=0.0f, const float sigma=0.0f, const float alpha=0.0f, const float beta=0.0f, const uint particles_N=0u, const float particles_rho=0.0f); // compiles OpenCL C code and allocates memory
 	LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const float fx=0.0f, const float fy=0.0f, const float fz=0.0f, const float sigma=0.0f, const float alpha=0.0f, const float beta=0.0f, const uint particles_N=0u, const float particles_rho=1.0f); // compiles OpenCL C code and allocates memory
@@ -387,18 +393,18 @@ public:
 	void run(const ulong steps=max_ulong); // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
 	void update_fields(); // update fields (rho, u, T) manually
 	void reset(); // reset simulation (takes effect in following run() call)
-#ifdef FORCE_FIELD
+// #ifdef FORCE_FIELD
 	void calculate_force_on_boundaries(); // calculate forces from fluid on TYPE_S nodes
 	float3 calculate_force_on_object(const uchar flag_marker=TYPE_S); // add up force for all nodes flagged with flag_marker
 	float3 calculate_torque_on_object(const uchar flag_marker=TYPE_S); // add up torque around center of mass for all nodes flagged with flag_marker
 	float3 calculate_torque_on_object(const float3& rotation_center, const uchar flag_marker=TYPE_S); // add up torque around specified rotation_center for all nodes flagged with flag_marker
-#endif // FORCE_FIELD
-#ifdef MOVING_BOUNDARIES
+// #endif // FORCE_FIELD
+// #ifdef MOVING_BOUNDARIES
 	void update_moving_boundaries(); // mark/unmark nodes next to TYPE_S nodes with velocity!=0 with TYPE_MS
-#endif // MOVING_BOUNDARIES
-#if defined(PARTICLES)&&!defined(FORCE_FIELD)
+// #endif // MOVING_BOUNDARIES
+// #if defined(PARTICLES)&&!defined(FORCE_FIELD)
 	void integrate_particles(const ulong steps=max_ulong, const uint time_step_multiplicator=1u); // intgegrate passive tracer particles forward in time in stationary flow field
-#endif // PARTICLES&&!FORCE_FIELD
+// #endif // PARTICLES&&!FORCE_FIELD
 
 	uint get_Nx() const { return Nx; } // get (global) lattice dimensions in x-direction
 	uint get_Ny() const { return Ny; } // get (global) lattice dimensions in y-direction
@@ -497,9 +503,8 @@ public:
 		uint last_exported_frame = 0u; // for next_frame(...) function
 		void default_settings() {
 			visualization_modes |= VIS_FLAG_LATTICE;
-#ifdef PARTICLES
-			visualization_modes |= VIS_PARTICLES;
-#endif // PARTICLES
+			if (fx3d::Settings::IsFeatureEnabled(fx3d::Feature::PARTICLES))
+				visualization_modes |= VIS_PARTICLES;
 		}
 
 	public:
@@ -553,3 +558,5 @@ public:
 	Graphics graphics;
 #endif // GRAPHICS
 }; // LBM
+
+}

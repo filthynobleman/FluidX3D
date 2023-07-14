@@ -9,37 +9,49 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/bin")
 
 # # MSVC complains about shared libraries
-# if(MSVC)
-#     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-#     set(BUILD_SHARED_LIBS TRUE)
-# endif()
+if(MSVC)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+    set(BUILD_SHARED_LIBS TRUE)
+endif()
 
 
 # Include external dependencies
-include_directories("${CMAKE_SOURCE_DIR}/src/OpenCL/include")
 include_directories("${CMAKE_SOURCE_DIR}/src/X11/include")
+include_directories("${CMAKE_SOURCE_DIR}/ext/json/include")
 
 find_package(OpenCL REQUIRED)
+if(${OpenCL_VERSION_MAJOR} EQUAL 1)
+    if(${OpenCL_VERSION_MAJOR} LESS_EQUAL 2)
+        include_directories("${OpenCL_INCLUDE_DIR}")
+    else()
+        include_directories("${CMAKE_SOURCE_DIR}/src/OpenCL/include")
+    endif()
+else()
+    include_directories("${CMAKE_SOURCE_DIR}/src/OpenCL/include")
+endif()
 
 # Include project dependencies
-include_directories("${CMAKE_COURCE_DIR}/src")
+# include_directories("${CMAKE_SOURCE_DIR}/src")
+include_directories("${CMAKE_SOURCE_DIR}/include")
 
 
 # Source file to library
-add_library(FX3D STATIC "${CMAKE_SOURCE_DIR}/src/graphics.cpp"
+add_library(FX3D SHARED "${CMAKE_SOURCE_DIR}/src/graphics.cpp"
                         "${CMAKE_SOURCE_DIR}/src/info.cpp"
                         "${CMAKE_SOURCE_DIR}/src/kernel.cpp"
                         "${CMAKE_SOURCE_DIR}/src/lbm.cpp"
                         "${CMAKE_SOURCE_DIR}/src/lodepng.cpp"
-                        "${CMAKE_SOURCE_DIR}/src/setup.cpp"
-                        "${CMAKE_SOURCE_DIR}/src/shapes.cpp")
+                        "${CMAKE_SOURCE_DIR}/src/shapes.cpp"
+                        "${CMAKE_SOURCE_DIR}/src/fx3d/settings.cpp"
+                        "${CMAKE_SOURCE_DIR}/src/fx3d/gsettings.cpp"
+                        "${CMAKE_SOURCE_DIR}/src/fx3d/scenes.cpp")
 target_link_libraries(FX3D OpenCL::OpenCL)
 set_property(TARGET FX3D PROPERTY CXX_STANDARD 17) 
 
 
 
 # Executable
-add_executable(FluidX3D "${CMAKE_SOURCE_DIR}/src/main.cpp")
+add_executable(FluidX3D "${CMAKE_SOURCE_DIR}/src/fluidx.cpp")
 target_link_libraries(FluidX3D FX3D OpenCL::OpenCL)
 set_property(TARGET FluidX3D PROPERTY CXX_STANDARD 17) 
 

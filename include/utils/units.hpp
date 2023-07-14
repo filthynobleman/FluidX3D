@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utilities.hpp"
+#include <utils/utilities.hpp>
 
 class Units { // contains the 3 base units m, kg, s for unit conversions and vtk output
 private:

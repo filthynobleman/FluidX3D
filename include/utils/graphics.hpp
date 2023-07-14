@@ -5,8 +5,9 @@
 //#define INTERACTIVE_GRAPHICS_ASCII
 //#define GRAPHICS
 
-#include "defines.hpp"
-#include "utilities.hpp"
+#include <utils/defines.hpp>
+#include <utils/utilities.hpp>
+#include <fx3d/settings.hpp>
 #include <atomic>
 
 extern vector<string> main_arguments; // console arguments
@@ -101,26 +102,6 @@ public:
 			case 'F': input_F(); break;
 			case 27: running=false; exit(0);
 		}
-#ifdef INTERACTIVE_GRAPHICS_ASCII
-		if(free) { // move free camera
-			if(key=='W') input_W();
-			if(key=='A') input_A();
-			if(key=='S') input_S();
-			if(key=='D') input_D();
-			if(key==' ') input_Space();
-			if(key=='C') input_C();
-		}
-		if(!lockmouse) {
-			if(key=='I') input_I(); // rotating camera with keys
-			if(key=='J') input_J();
-			if(key=='K') input_K();
-			if(key=='L') input_L();
-		}
-		if(key=='Y') input_Y(); // adjusting field of view
-		if(key=='X') input_X();
-		if(key=='N') input_N(); // adjust camera.vr eye distance
-		if(key=='M') input_M();
-#endif // INTERACTIVE_GRAPHICS_ASCII
 	}
 	void update_state() {
 		if(!free) {
@@ -153,7 +134,7 @@ public:
 	}
 	void clear_frame() {
 		for(uint i=0u; i<width*height; i++) {
-			bitmap[i] = GRAPHICS_BACKGROUND_COLOR;
+			bitmap[i] = fx3d::GraphicsSettings::GetBackgroundColor();
 			zbuffer[i] = min_int;
 		}
 	}
@@ -252,14 +233,6 @@ private:
 		autorotation = !autorotation;
 	}
 	void input_U() {
-#if defined(INTERACTIVE_GRAPHICS) && defined(_WIN32)
-		if(!lockmouse) {
-			ShowCursor(true); // show cursor
-		} else {
-			ShowCursor(false); // hide cursor
-			SetCursorPos(width/2, height/2); // reset mouse
-		}
-#endif // Windows
 		lockmouse = !lockmouse;
 	}
 	void input_I() {
@@ -314,9 +287,6 @@ private:
 	}
 
 	void update_rotation(const double arx, const double ary) {
-#if defined(INTERACTIVE_GRAPHICS)&&defined(_WIN32)
-		if(!lockmouse) SetCursorPos((int)width/2, (int)height/2);
-#endif // INTERACTIVE_GRAPHICS && Windows
 		rx += arx*pi/180.0;
 		ry += ary*pi/180.0;
 		rx = fmod(rx, 2.0*pi);

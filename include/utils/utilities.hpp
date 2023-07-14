@@ -4159,7 +4159,7 @@ inline void write_qoi(const string& filename, const Image* image) { // 3-channel
 	delete[] data;
 }
 #ifdef UTILITIES_PNG
-#include "lodepng.hpp"
+#include <utils/lodepng.hpp>
 inline Image* read_png(const string& filename, Image* image=nullptr) {
 	uint width=0u, height=0u;
 	vector<uchar> data;

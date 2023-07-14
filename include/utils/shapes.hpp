@@ -1,7 +1,7 @@
 #pragma once
 
-#include "defines.hpp"
-#include "utilities.hpp"
+// #include <utils/defines.hpp>
+#include <utils/utilities.hpp>
 
 bool sphere(const uint x, const uint y, const uint z, const float3& p, const float r);
 bool ellipsoid(const uint x, const uint y, const uint z, const float3& p, const float3& r);

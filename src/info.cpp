@@ -1,15 +1,16 @@
-#include "info.hpp"
-#include "lbm.hpp"
+#include <fx3d/info.hpp>
+#include <fx3d/lbm.hpp>
 
-Info info;
+using namespace fx3d;
+
+Info fx3d::info;
 
 void Info::initialize(LBM* lbm) {
 	this->lbm = lbm;
-#if defined(SRT)
-	collision = "SRT";
-#elif defined(TRT)
-	collision = "TRT";
-#endif // TRT
+	if (Settings::GetCollisionType() == CollisionType::SRT)
+		collision = "SRT";
+	else if (Settings::GetCollisionType() == CollisionType::TRT)
+		collision = "TRT";
 #if defined(FP16S)
 	collision += " (FP32/FP16S)";
 #elif defined(FP16C)
@@ -69,22 +70,17 @@ void Info::print_initialize() {
 	println("| Kin. Viscosity  | "+alignr(57u, /*************************************************************************************/ to_string(lbm->get_nu(), 8u))+" |");
 	println("| Relaxation Time | "+alignr(57u, /************************************************************************************/ to_string(lbm->get_tau(), 8u))+" |");
 	println("| Reynolds Number | "+alignr(57u, /******************************************/ "Re < "+string(Re>=100.0f ? to_string(to_uint(Re)) : to_string(Re, 6u)))+" |");
-#ifdef VOLUME_FORCE
-	println("| Volume Force    | "+alignr(57u, alignr(15u, to_string(lbm->get_fx(), 8u))+","+alignr(15u, to_string(lbm->get_fy(), 8u))+","+alignr(15u, to_string(lbm->get_fz(), 8u)))+" |");
-#endif // VOLUME_FORCE
-#ifdef SURFACE
-	println("| Surface Tension | "+alignr(57u, /**********************************************************************************/ to_string(lbm->get_sigma(), 8u))+" |");
-#endif // SURFACE
-#ifdef TEMPERATURE
-	println("| Thermal Diff.   | "+alignr(57u, /**********************************************************************************/ to_string(lbm->get_alpha(), 8u))+" |");
-	println("| Thermal Exp.    | "+alignr(57u, /***********************************************************************************/ to_string(lbm->get_beta(), 8u))+" |");
-#endif // TEMPERATURE
-#ifndef INTERACTIVE_GRAPHICS_ASCII
+	if (Settings::IsFeatureEnabled(Feature::VOLUME_FORCE))
+		println("| Volume Force    | "+alignr(57u, alignr(15u, to_string(lbm->get_fx(), 8u))+","+alignr(15u, to_string(lbm->get_fy(), 8u))+","+alignr(15u, to_string(lbm->get_fz(), 8u)))+" |");
+	if (Settings::IsFeatureEnabled(Feature::SURFACE))
+		println("| Surface Tension | "+alignr(57u, /**********************************************************************************/ to_string(lbm->get_sigma(), 8u))+" |");
+	if (Settings::IsFeatureEnabled(Feature::TEMPERATURE))
+	{
+		println("| Thermal Diff.   | "+alignr(57u, /**********************************************************************************/ to_string(lbm->get_alpha(), 8u))+" |");
+		println("| Thermal Exp.    | "+alignr(57u, /***********************************************************************************/ to_string(lbm->get_beta(), 8u))+" |");
+	}
 	println("|---------.-------'-----.-----------.-------------------.---------------------|");
 	println("| MLUPs   | Bandwidth   | Steps/s   | Current Step      | "+string(steps==max_ulong?"Elapsed Time  ":"Time Remaining")+"      |");
-#else // INTERACTIVE_GRAPHICS_ASCII
-	println("'-----------------'-----------------------------------------------------------'");
-#endif // INTERACTIVE_GRAPHICS_ASCII
 	allow_rendering = true;
 }
 void Info::print_update() const {
