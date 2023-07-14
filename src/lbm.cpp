@@ -8,23 +8,7 @@ using namespace fx3d;
 
 Units units; // for unit conversion
 
-#if defined(D2Q9)
-const uint velocity_set = 9u;
-const uint dimensions = 2u;
-const uint transfers = 3u;
-#elif defined(D3Q15)
-const uint velocity_set = 15u;
-const uint dimensions = 3u;
-const uint transfers = 5u;
-#elif defined(D3Q19)
-const uint velocity_set = 19u;
-const uint dimensions = 3u;
-const uint transfers = 5u;
-#elif defined(D3Q27)
-const uint velocity_set = 27u;
-const uint dimensions = 3u;
-const uint transfers = 9u;
-#endif // D3Q27
+
 
 uint fx3d::bytes_per_cell_host() { // returns the number of Bytes per cell allocated in host memory
 	uint bytes_per_cell = 17u; // rho, u, flags
@@ -37,7 +21,7 @@ uint fx3d::bytes_per_cell_host() { // returns the number of Bytes per cell alloc
 	return bytes_per_cell;
 }
 uint fx3d::bytes_per_cell_device() { // returns the number of Bytes per cell allocated in device memory
-	uint bytes_per_cell = velocity_set*sizeof(fpxx)+17u; // fi, rho, u, flags
+	uint bytes_per_cell = Settings::GetVSetSize()*sizeof(fpxx)+17u; // fi, rho, u, flags
 	if (Settings::IsFeatureEnabled(Feature::FORCE_FIELD))
 		bytes_per_cell += 12u; // F
 	if (Settings::IsFeatureEnabled(Feature::SURFACE))
@@ -47,15 +31,15 @@ uint fx3d::bytes_per_cell_device() { // returns the number of Bytes per cell all
 	return bytes_per_cell;
 }
 uint fx3d::bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per cell per time step from/to device memory
-	uint bandwidth_bytes_per_cell = velocity_set*2u*sizeof(fpxx)+1u; // lattice.set()*2*fi, flags
+	uint bandwidth_bytes_per_cell = Settings::GetVSetSize()*2u*sizeof(fpxx)+1u; // lattice.set()*2*fi, flags
 	if (Settings::IsFeatureEnabled(Feature::UPDATE_FIELDS))
 		bandwidth_bytes_per_cell += 16u; // rho, u
 	if (Settings::IsFeatureEnabled(Feature::FORCE_FIELD))
 		bandwidth_bytes_per_cell += 12u; // F
 	if (Settings::IsFeatureEnabled((Feature)((int)Feature::MOVING_BOUNDARIES | (int)Feature::SURFACE | (int)Feature::TEMPERATURE)))
-		bandwidth_bytes_per_cell += (velocity_set-1u)*1u; // neighbor flags have to be loaded
+		bandwidth_bytes_per_cell += (Settings::GetVSetSize()-1u)*1u; // neighbor flags have to be loaded
 	if (Settings::IsFeatureEnabled(Feature::SURFACE))
-		bandwidth_bytes_per_cell += (1u+(2u*velocity_set-1u)*sizeof(fpxx)+8u+(velocity_set-1u)*4u) + 1u + 1u + (4u+velocity_set+4u+4u+4u); // surface_0 (flags, fi, mass, massex), surface_1 (flags), surface_2 (flags), surface_3 (rho, flags, mass, massex, phi)
+		bandwidth_bytes_per_cell += (1u+(2u*Settings::GetVSetSize()-1u)*sizeof(fpxx)+8u+(Settings::GetVSetSize()-1u)*4u) + 1u + 1u + (4u+Settings::GetVSetSize()+4u+4u+4u); // surface_0 (flags, fi, mass, massex), surface_1 (flags), surface_2 (flags), surface_3 (rho, flags, mass, massex, phi)
 	if (Settings::IsFeatureEnabled(Feature::TEMPERATURE))
 		bandwidth_bytes_per_cell += 7u*2u*sizeof(fpxx)+4u; // 2*gi, T
 	return bandwidth_bytes_per_cell;
@@ -103,7 +87,7 @@ LBM_Domain::LBM_Domain(const Device_Info& device_info, const uint Nx, const uint
 
 void LBM_Domain::allocate(Device& device) {
 	const ulong N = get_N();
-	fi = Memory<fpxx>(device, N, velocity_set, false);
+	fi = Memory<fpxx>(device, N, Settings::GetVSetSize(), false);
 	rho = Memory<float>(device, N, 1u, true, true, 1.0f);
 	u = Memory<float>(device, N, 3u);
 	flags = Memory<uchar>(device, N);
@@ -220,7 +204,7 @@ void LBM_Domain::finish_queue() {
 }
 
 uint LBM_Domain::get_velocity_set() const {
-	return velocity_set;
+	return Settings::GetVSetSize();
 }
 
 void LBM_Domain::voxelize_mesh_on_device(const Mesh* mesh, const uchar flag, const float3& rotation_center, const float3& linear_velocity, const float3& rotational_velocity) { // voxelize triangle mesh
@@ -303,37 +287,43 @@ string LBM_Domain::device_defines() const {
 	ss << "\n #define def_domain_offset_y " << to_string((float)Oy+(float)(Dy>1u)-0.5f*((float)Dy-1.0f)*(float)(Ny-2u*(Dy>1u))) << "f";
 	ss << "\n #define def_domain_offset_z " << to_string((float)Oz+(float)(Dz>1u)-0.5f*((float)Dz-1.0f)*(float)(Nz-2u*(Dz>1u))) << "f";
 
-	ss << "\n #define D" << to_string(dimensions) << "Q" << to_string(velocity_set) << ""; // D2Q9/D3Q15/D3Q19/D3Q27
-	ss << "\n #define def_velocity_set " << to_string(velocity_set) << "u"; // LBM velocity set (D2Q9/D3Q15/D3Q19/D3Q27)
-	ss << "\n #define def_dimensions " << to_string(dimensions) << "u"; // number spatial dimensions (2D or 3D)
-	ss << "\n #define def_transfers " << to_string(transfers) << "u"; // number of DDFs that are transferred between multiple domains
+	ss << "\n #define D" << to_string(Settings::GetVSetDims()) << "Q" << to_string(Settings::GetVSetSize()) << ""; // D2Q9/D3Q15/D3Q19/D3Q27
+	ss << "\n #define def_velocity_set " << to_string(Settings::GetVSetSize()) << "u"; // LBM velocity set (D2Q9/D3Q15/D3Q19/D3Q27)
+	ss << "\n #define def_dimensions " << to_string(Settings::GetVSetDims()) << "u"; // number spatial dimensions (2D or 3D)
+	ss << "\n #define def_transfers " << to_string(Settings::GetVSetTransfer()) << "u"; // number of DDFs that are transferred between multiple domains
 
 	ss << "\n #define def_c 0.57735027f"; // lattice speed of sound c = 1/sqrt(3)*dt
 	ss << "\n #define def_w " << to_string(1.0f/get_tau()) << "f"; // relaxation rate w = dt/tau = dt/(nu/c^2+dt/2) = 1/(3*nu+1/2)
-#if defined(D2Q9)
-	ss << "\n #define def_w0 (1.0f/2.25f)"; // center (0)
-	ss << "\n #define def_ws (1.0f/9.0f)"; // straight (1-4)
-	ss << "\n #define def_we (1.0f/36.0f)"; // edge (5-8)
-#elif defined(D3Q15)
-	ss << "\n #define def_w0 (1.0f/4.5f)"; // center (0)
-	ss << "\n #define def_ws (1.0f/9.0f)"; // straight (1-6)
-	ss << "\n #define def_wc (1.0f/72.0f)"; // corner (7-14)
-#elif defined(D3Q19)
-	ss << "\n #define def_w0 (1.0f/3.0f)"; // center (0)
-	ss << "\n #define def_ws (1.0f/18.0f)"; // straight (1-6)
-	ss << "\n #define def_we (1.0f/36.0f)"; // edge (7-18)
-#elif defined(D3Q27)
-	ss << "\n #define def_w0 (1.0f/3.375f)"; // center (0)
-	ss << "\n #define def_ws (1.0f/13.5f)"; // straight (1-6)
-	ss << "\n #define def_we (1.0f/54.0f)"; // edge (7-18)
-	ss << "\n #define def_wc (1.0f/216.0f)"; // corner (19-26)
-#endif // D3Q27
+	if (Settings::GetVelocitySet() == VelocitySet::D2Q9)
+	{
+		ss << "\n #define def_w0 (1.0f/2.25f)"; // center (0)
+		ss << "\n #define def_ws (1.0f/9.0f)"; // straight (1-4)
+		ss << "\n #define def_we (1.0f/36.0f)"; // edge (5-8)
+	}
+	else if (Settings::GetVelocitySet() == VelocitySet::D3Q15)
+	{
+		ss << "\n #define def_w0 (1.0f/4.5f)"; // center (0)
+		ss << "\n #define def_ws (1.0f/9.0f)"; // straight (1-6)
+		ss << "\n #define def_wc (1.0f/72.0f)"; // corner (7-14)
+	}
+	else if (Settings::GetVelocitySet() == VelocitySet::D3Q19)
+	{
+		ss << "\n #define def_w0 (1.0f/3.0f)"; // center (0)
+		ss << "\n #define def_ws (1.0f/18.0f)"; // straight (1-6)
+		ss << "\n #define def_we (1.0f/36.0f)"; // edge (7-18)
+	}
+	else if (Settings::GetVelocitySet() == VelocitySet::D3Q27)
+	{
+		ss << "\n #define def_w0 (1.0f/3.375f)"; // center (0)
+		ss << "\n #define def_ws (1.0f/13.5f)"; // straight (1-6)
+		ss << "\n #define def_we (1.0f/54.0f)"; // edge (7-18)
+		ss << "\n #define def_wc (1.0f/216.0f)"; // corner (19-26)
+	}
 
-#if defined(SRT)
-	ss << "\n #define SRT";
-#elif defined(TRT)
-	ss << "\n #define TRT";
-#endif // TRT
+	if (Settings::GetCollisionType() == CollisionType::SRT)
+		ss << "\n #define SRT";
+	else if (Settings::GetCollisionType() == CollisionType::TRT)
+		ss << "\n #define TRT";
 
 	ss << "\n #define TYPE_S 0x01"; // 0b00000001 // (stationary or moving) solid boundary
 	ss << "\n #define TYPE_E 0x02"; // 0b00000010 // equilibrium boundary (inflow/outflow)
@@ -416,11 +406,14 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", lbm->flags, camera_parameters, bitmap, zbuffer);
 	kernel_graphics_flags_mc = Kernel(device, lbm->get_N(), "graphics_flags_mc", lbm->flags, camera_parameters, bitmap, zbuffer);
 	kernel_graphics_field = Kernel(device, lbm->get_N(), "graphics_field", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0);
-#ifndef D2Q9
-	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Ny()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Nz()/fx3d::GraphicsSettings::GetStreamlineSparse()), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 3D
-#else // D2Q9
-	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Ny()/fx3d::GraphicsSettings::GetStreamlineSparse()), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 2D
-#endif // D2Q9
+	if (Settings::GetVelocitySet() == VelocitySet::D2Q9)
+	{
+		kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Ny()/fx3d::GraphicsSettings::GetStreamlineSparse()), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 2D
+	}
+	else
+	{
+		kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Ny()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Nz()/fx3d::GraphicsSettings::GetStreamlineSparse()), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 3D
+	}
 	kernel_graphics_q = Kernel(device, lbm->get_N(), "graphics_q", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
 
 	if (Settings::IsFeatureEnabled(Feature::FORCE_FIELD))
@@ -675,7 +668,7 @@ void LBM::sanity_checks_constructor(const vector<Device_Info>& device_infos, con
 		const uint maxNx=(uint)(factor*(float)Nx), maxNy=(uint)(factor*(float)Ny), maxNz=(uint)(factor*(float)Nz);
 		string message = "Grid resolution ("+to_string(Nx)+", "+to_string(Ny)+", "+to_string(Nz)+") is too large: "+to_string(Dx*Dy*Dz)+"x "+to_string(memory_required)+" MB required, "+to_string(Dx*Dy*Dz)+"x "+to_string(memory_available)+" MB available. Largest possible resolution is ("+to_string(maxNx)+", "+to_string(maxNy)+", "+to_string(maxNz)+"). Restart the simulation with lower resolution or on different device(s) with more memory.";
 #if !defined(FP16S)&&!defined(FP16C)
-		uint memory_required_fp16 = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*(ulong)(bytes_per_cell_device()-velocity_set*2u)/1048576ull); // in MB
+		uint memory_required_fp16 = (uint)((ulong)Nx*(ulong)Ny*(ulong)Nz/((ulong)(Dx*Dy*Dz))*(ulong)(bytes_per_cell_device()-Settings::GetVSetSize()*2u)/1048576ull); // in MB
 		float factor_fp16 = cbrt((float)memory_available/(float)memory_required_fp16);
 		const uint maxNx_fp16=(uint)(factor_fp16*(float)Nx), maxNy_fp16=(uint)(factor_fp16*(float)Ny), maxNz_fp16=(uint)(factor_fp16*(float)Nz);
 		message += " Consider using FP16S/FP16C memory compression to double maximum grid resolution to a maximum of ("+to_string(maxNx_fp16)+", "+to_string(maxNy_fp16)+", "+to_string(maxNz_fp16)+"); for this, uncomment \"#define FP16S\" or \"#define FP16C\" in defines.hpp.";
@@ -684,14 +677,13 @@ void LBM::sanity_checks_constructor(const vector<Device_Info>& device_infos, con
 	}
 	if(nu==0.0f) print_error("Viscosity cannot be 0. Change it in setup.cpp."); // sanity checks for viscosity
 	else if(nu<0.0f) print_error("Viscosity cannot be negative. Remove the \"-\" in setup.cpp.");
-#ifdef D2Q9
-	if(Nz!=1u) print_error("D2Q9 is the 2D velocity set. You have to set Nz=1u in the LBM constructor! Currently you have set Nz="+to_string(Nz)+"u.");
-#endif // D2Q9
-#if !defined(SRT)&&!defined(TRT)
-	print_error("No LBM collision operator selected. Uncomment either \"#define SRT\" or \"#define TRT\" in defines.hpp");
-#elif defined(SRT)&&defined(TRT)
-	print_error("Too many LBM collision operators selected. Comment out either \"#define SRT\" or \"#define TRT\" in defines.hpp");
-#endif // SRT && TRT
+	if (Settings::GetVelocitySet() == VelocitySet::D2Q9)
+	{
+		if(Nz!=1u) 
+			print_error("D2Q9 is the 2D velocity set. You have to set Nz=1u in the LBM constructor! Currently you have set Nz="+to_string(Nz)+"u.");
+	}
+	if (Settings::GetCollisionType() != CollisionType::SRT && Settings::GetCollisionType() != CollisionType::TRT)
+		print_error("Invalid LBM collision operator selected.");
 	if (!Settings::IsFeatureEnabled(Feature::VOLUME_FORCE))
 	{
 		if(fx!=0.0f||fy!=0.0f||fz!=0.0f) 
@@ -1221,8 +1213,8 @@ void LBM_Domain::allocate_transfer(Device& device) { // allocate all memory for 
 	if(Dy>1u) Amax = max(Amax, (ulong)Nz*(ulong)Nx); // Ay
 	if(Dz>1u) Amax = max(Amax, (ulong)Nx*(ulong)Ny); // Az
 
-	transfer_buffer_p = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u)); // only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
-	transfer_buffer_m = Memory<char>(device, Amax, max(transfers*(uint)sizeof(fpxx), 17u));
+	transfer_buffer_p = Memory<char>(device, Amax, max(Settings::GetVSetTransfer()*(uint)sizeof(fpxx), 17u)); // only allocate one set of transfer buffers in plus/minus directions, for all x/y/z transfers
+	transfer_buffer_m = Memory<char>(device, Amax, max(Settings::GetVSetTransfer()*(uint)sizeof(fpxx), 17u));
 
 	kernel_transfer[enum_transfer_field::fi              ][0] = Kernel(device, 0u, "transfer_extract_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);
 	kernel_transfer[enum_transfer_field::fi              ][1] = Kernel(device, 0u, "transfer__insert_fi"              , 0u, t, transfer_buffer_p, transfer_buffer_m, fi);
@@ -1289,7 +1281,7 @@ void LBM::communicate_field(const enum_transfer_field field, const uint bytes_pe
 }
 
 void LBM::communicate_fi() {
-	communicate_field(enum_transfer_field::fi, transfers*sizeof(fpxx));
+	communicate_field(enum_transfer_field::fi, Settings::GetVSetTransfer()*sizeof(fpxx));
 }
 void LBM::communicate_rho_u_flags() {
 	communicate_field(enum_transfer_field::rho_u_flags, 17u);

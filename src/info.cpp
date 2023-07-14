@@ -7,11 +7,10 @@ Info fx3d::info;
 
 void Info::initialize(LBM* lbm) {
 	this->lbm = lbm;
-#if defined(SRT)
-	collision = "SRT";
-#elif defined(TRT)
-	collision = "TRT";
-#endif // TRT
+	if (Settings::GetCollisionType() == CollisionType::SRT)
+		collision = "SRT";
+	else if (Settings::GetCollisionType() == CollisionType::TRT)
+		collision = "TRT";
 #if defined(FP16S)
 	collision += " (FP32/FP16S)";
 #elif defined(FP16C)

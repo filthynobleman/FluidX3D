@@ -16,22 +16,22 @@ namespace fx3d
     
 enum VelocitySet
 {
-    // // choose D2Q9 velocity set for 2D; allocates 53 (FP32) or 35 (FP16) Bytes/node
-    // D2Q9,
-    // // choose D3Q15 velocity set for 3D; allocates 77 (FP32) or 47 (FP16) Bytes/node
-    // D3Q15,
-    // // choose D3Q19 velocity set for 3D; allocates 93 (FP32) or 55 (FP16) Bytes/node; (default)
-    // D3Q19,
-    // // choose D3Q27 velocity set for 3D; allocates 125 (FP32) or 71 (FP16) Bytes/node
-    // D3Q27
+    // choose D2Q9 velocity set for 2D; allocates 53 (FP32) or 35 (FP16) Bytes/node
+    D2Q9,
+    // choose D3Q15 velocity set for 3D; allocates 77 (FP32) or 47 (FP16) Bytes/node
+    D3Q15,
+    // choose D3Q19 velocity set for 3D; allocates 93 (FP32) or 55 (FP16) Bytes/node; (default)
+    D3Q19,
+    // choose D3Q27 velocity set for 3D; allocates 125 (FP32) or 71 (FP16) Bytes/node
+    D3Q27
 };
 
-enum RelaxTime
+enum CollisionType
 {
-    // // choose single-relaxation-time LBM collision operator; (default)
-    // SRT,
-    // // choose two-relaxation-time LBM collision operator
-    // TRT
+    // choose single-relaxation-time LBM collision operator; (default)
+    SRT,
+    // choose two-relaxation-time LBM collision operator
+    TRT
 };
 
 enum DDFCompression
@@ -77,19 +77,26 @@ class Settings
 {
 private:
     static VelocitySet m_VSet;      // fx3d::VelocitySet::D3Q19
-    static RelaxTime m_RTime;       // fx3d::RelaxTime::SRT
+    static CollisionType m_CollType;       // fx3d::CollisionType::SRT
     static DDFCompression m_Compr;  // fx3d::DDFCompression::FP16S
     static Feature m_Features;
+
+    static unsigned int m_VSetSize;
+    static unsigned int m_VSetDims;
+    static unsigned int m_VSetTransfer;
 
 
     Settings() = delete;
     ~Settings() = delete;
 public:
     static VelocitySet GetVelocitySet();
+    static unsigned int GetVSetSize();
+    static unsigned int GetVSetDims();
+    static unsigned int GetVSetTransfer();
     static void SetVelocitySet(VelocitySet VSet);
 
-    static RelaxTime GetRelaxTime();
-    static void SetRelaxTime(RelaxTime RTime);
+    static CollisionType GetCollisionType();
+    static void SetCollisionType(CollisionType CType);
 
     static DDFCompression GetDDFCompression();
     static void SetDDFCompression(DDFCompression Compression);
