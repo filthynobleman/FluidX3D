@@ -233,14 +233,6 @@ private:
 		autorotation = !autorotation;
 	}
 	void input_U() {
-#if defined(INTERACTIVE_GRAPHICS) && defined(_WIN32)
-		if(!lockmouse) {
-			ShowCursor(true); // show cursor
-		} else {
-			ShowCursor(false); // hide cursor
-			SetCursorPos(width/2, height/2); // reset mouse
-		}
-#endif // Windows
 		lockmouse = !lockmouse;
 	}
 	void input_I() {
@@ -295,9 +287,6 @@ private:
 	}
 
 	void update_rotation(const double arx, const double ary) {
-#if defined(INTERACTIVE_GRAPHICS)&&defined(_WIN32)
-		if(!lockmouse) SetCursorPos((int)width/2, (int)height/2);
-#endif // INTERACTIVE_GRAPHICS && Windows
 		rx += arx*pi/180.0;
 		ry += ary*pi/180.0;
 		rx = fmod(rx, 2.0*pi);

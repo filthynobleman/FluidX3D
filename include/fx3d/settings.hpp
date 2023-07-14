@@ -46,24 +46,24 @@ enum DDFCompression
 
 enum Feature
 {
-    // // enables global force per volume in one direction (equivalent to a pressure gradient); specified in the LBM class constructor; the force can be changed on-the-fly between time steps at no performance cost
-    // VOLUME_FORCE = 1,
-    // // enables computing the forces on solid boundaries with lbm.calculate_force_on_boundaries(); and enables setting the force for each lattice point independently (enable VOLUME_FORCE too); allocates an extra 12 Bytes/node
-    // FORCE_FIELD = 2,
-    // // enables fixing the velocity/density by marking nodes with TYPE_E; can be used for inflow/outflow; does not reflect shock waves
-    // EQUILIBRIUM_BOUNDARIES = 4,
-    // // enables moving solids: set solid nodes to TYPE_S and set their velocity u unequal to zero
-    // MOVING_BOUNDARIES = 8,
-    // // enables free surface LBM: mark fluid nodes with TYPE_F; at initialization the TYPE_I interface and TYPE_G gas domains will automatically be completed; allocates an extra 12 Bytes/node
-    // SURFACE = 16,
-    // // enables temperature extension; set fixed-temperature nodes with TYPE_T (similar to EQUILIBRIUM_BOUNDARIES); allocates an extra 32 (FP32) or 18 (FP16) Bytes/node
-    // TEMPERATURE = 32,
-    // // enables Smagorinsky-Lilly subgrid turbulence LES model to keep simulations with very large Reynolds number stable
-    // SUBGRID = 64,
-    // // enables particles with immersed-boundary method (for 2-way coupling also activate VOLUME_FORCE and FORCE_FIELD; only supported in single-GPU)
-    // PARTICLES = 128,
-    // // update (rho, u, T) in every LBM step
-    // UPDATE_FIELDS = 256
+    // enables global force per volume in one direction (equivalent to a pressure gradient); specified in the LBM class constructor; the force can be changed on-the-fly between time steps at no performance cost
+    VOLUME_FORCE = 1,
+    // enables computing the forces on solid boundaries with lbm.calculate_force_on_boundaries(); and enables setting the force for each lattice point independently (enable VOLUME_FORCE too); allocates an extra 12 Bytes/node
+    FORCE_FIELD = 2,
+    // enables fixing the velocity/density by marking nodes with TYPE_E; can be used for inflow/outflow; does not reflect shock waves
+    EQUILIBRIUM_BOUNDARIES = 4,
+    // enables moving solids: set solid nodes to TYPE_S and set their velocity u unequal to zero
+    MOVING_BOUNDARIES = 8,
+    // enables free surface LBM: mark fluid nodes with TYPE_F; at initialization the TYPE_I interface and TYPE_G gas domains will automatically be completed; allocates an extra 12 Bytes/node
+    SURFACE = 16,
+    // enables temperature extension; set fixed-temperature nodes with TYPE_T (similar to EQUILIBRIUM_BOUNDARIES); allocates an extra 32 (FP32) or 18 (FP16) Bytes/node
+    TEMPERATURE = 32,
+    // enables Smagorinsky-Lilly subgrid turbulence LES model to keep simulations with very large Reynolds number stable
+    SUBGRID = 64,
+    // enables particles with immersed-boundary method (for 2-way coupling also activate VOLUME_FORCE and FORCE_FIELD; only supported in single-GPU)
+    PARTICLES = 128,
+    // update (rho, u, T) in every LBM step
+    UPDATE_FIELDS = 256
 };
 
 

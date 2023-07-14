@@ -31,14 +31,36 @@ void fx3d::Settings::SetRelaxTime(fx3d::RelaxTime RTime) { m_RTime = RTime; }
 void fx3d::Settings::SetDDFCompression(fx3d::DDFCompression Compr) { m_Compr = Compr; }
 
 
+// #ifdef SURFACE // (rho, u) need to be updated exactly every LBM step
+// #define UPDATE_FIELDS // update (rho, u, T) in every LBM step
+// #endif // SURFACE
+
+// #ifdef PARTICLES // (rho, u) need to be updated exactly every LBM step
+// #define UPDATE_FIELDS // update (rho, u, T) in every LBM step
+// #endif // PARTICLES
+
+// #ifdef TEMPERATURE
+// #define VOLUME_FORCE
+// #endif // TEMPERATURE
 void fx3d::Settings::EnableFeature(fx3d::Feature Feat)
 {
     m_Features = (fx3d::Feature)((int)m_Features | (int)Feat);
+    if (((int)Feat & ((int)fx3d::Feature::SURFACE | (int)fx3d::Feature::PARTICLES)) != 0)
+        EnableFeature(fx3d::Feature::UPDATE_FIELDS);
+    if (((int)Feat & (int)fx3d::Feature::TEMPERATURE) != 0)
+        EnableFeature(VOLUME_FORCE);
 }
 
 void fx3d::Settings::DisableFeature(fx3d::Feature Feat)
 {
     m_Features = (fx3d::Feature)((int)m_Features & (~((int)Feat)));
+    if (((int)Feat & (int)fx3d::Feature::VOLUME_FORCE) != 0)
+        DisableFeature(fx3d::Feature::TEMPERATURE);
+    if (((int)Feat & (int)fx3d::Feature::UPDATE_FIELDS) != 0)
+    {
+        DisableFeature(fx3d::Feature::SURFACE);
+        DisableFeature(fx3d::Feature::PARTICLES);
+    }
 }
 
 bool fx3d::Settings::IsFeatureEnabled(fx3d::Feature Feat)
