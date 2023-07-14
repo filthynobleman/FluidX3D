@@ -16,13 +16,23 @@ endif()
 
 
 # Include external dependencies
-include_directories("${CMAKE_SOURCE_DIR}/src/OpenCL/include")
+# include_directories("${CMAKE_SOURCE_DIR}/src/OpenCL/include")
 include_directories("${CMAKE_SOURCE_DIR}/src/X11/include")
 
 find_package(OpenCL REQUIRED)
+if(${OpenCL_VERSION_MAJOR} EQUAL 1)
+    if(${OpenCL_VERSION_MAJOR} LESS_EQUAL 2)
+        include_directories("${OpenCL_INCLUDE_DIR}")
+    else()
+        include_directories("${CMAKE_SOURCE_DIR}/src/OpenCL/include")
+    endif()
+else()
+    include_directories("${CMAKE_SOURCE_DIR}/src/OpenCL/include")
+endif()
 
 # Include project dependencies
-include_directories("${CMAKE_COURCE_DIR}/src")
+# include_directories("${CMAKE_SOURCE_DIR}/src")
+include_directories("${CMAKE_SOURCE_DIR}/include")
 
 
 # Source file to library

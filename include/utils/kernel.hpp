@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utilities.hpp"
+#include <utils/utilities.hpp>
 #define R(...) string(" "#__VA_ARGS__" ") // evil stringification macro, similar syntax to raw string R"(...)"
 
 string opencl_c_container(); // outsourced to kernel.cpp

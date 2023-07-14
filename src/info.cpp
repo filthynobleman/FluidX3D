@@ -1,7 +1,9 @@
-#include "info.hpp"
-#include "lbm.hpp"
+#include <fx3d/info.hpp>
+#include <fx3d/lbm.hpp>
 
-Info info;
+using namespace fx3d;
+
+Info fx3d::info;
 
 void Info::initialize(LBM* lbm) {
 	this->lbm = lbm;

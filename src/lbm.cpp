@@ -1,5 +1,6 @@
-#include "lbm.hpp"
+#include <fx3d/lbm.hpp>
 
+using namespace fx3d;
 
 
 Units units; // for unit conversion
@@ -22,7 +23,7 @@ const uint dimensions = 3u;
 const uint transfers = 9u;
 #endif // D3Q27
 
-uint bytes_per_cell_host() { // returns the number of Bytes per cell allocated in host memory
+uint fx3d::bytes_per_cell_host() { // returns the number of Bytes per cell allocated in host memory
 	uint bytes_per_cell = 17u; // rho, u, flags
 #ifdef FORCE_FIELD
 	bytes_per_cell += 12u; // F
@@ -35,7 +36,7 @@ uint bytes_per_cell_host() { // returns the number of Bytes per cell allocated i
 #endif // TEMPERATURE
 	return bytes_per_cell;
 }
-uint bytes_per_cell_device() { // returns the number of Bytes per cell allocated in device memory
+uint fx3d::bytes_per_cell_device() { // returns the number of Bytes per cell allocated in device memory
 	uint bytes_per_cell = velocity_set*sizeof(fpxx)+17u; // fi, rho, u, flags
 #ifdef FORCE_FIELD
 	bytes_per_cell += 12u; // F
@@ -48,7 +49,7 @@ uint bytes_per_cell_device() { // returns the number of Bytes per cell allocated
 #endif // TEMPERATURE
 	return bytes_per_cell;
 }
-uint bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per cell per time step from/to device memory
+uint fx3d::bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per cell per time step from/to device memory
 	uint bandwidth_bytes_per_cell = velocity_set*2u*sizeof(fpxx)+1u; // lattice.set()*2*fi, flags
 #ifdef UPDATE_FIELDS
 	bandwidth_bytes_per_cell += 16u; // rho, u
@@ -67,18 +68,18 @@ uint bandwidth_bytes_per_cell_device() { // returns the bandwidth in Bytes per c
 #endif // TEMPERATURE
 	return bandwidth_bytes_per_cell;
 }
-uint3 resolution(const float3 box_aspect_ratio, const uint memory) { // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
+uint3 fx3d::resolution(const float3 box_aspect_ratio, const uint memory) { // input: simulation box aspect ratio and VRAM occupation in MB, output: grid resolution
 	float memory_required = (box_aspect_ratio.x*box_aspect_ratio.y*box_aspect_ratio.z)*(float)bytes_per_cell_device()/1048576.0f; // in MB
 	float scaling = cbrt((float)memory/memory_required);
 	return uint3(to_uint(scaling*box_aspect_ratio.x), to_uint(scaling*box_aspect_ratio.y), to_uint(scaling*box_aspect_ratio.z));
 }
 
-string default_filename(const string& path, const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp
+string fx3d::default_filename(const string& path, const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp
 	string time = "00000000"+to_string(t);
 	time = substring(time, length(time)-9u, 9u);
 	return create_file_extension((path=="" ? get_exe_path()+"export/" : path)+(name=="" ? "file" : name)+"-"+time, extension);
 }
-string default_filename(const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp at exe_path/export/
+string fx3d::default_filename(const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp at exe_path/export/
 	return default_filename("", name, extension, t);
 }
 
@@ -662,10 +663,10 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const uint Dx, const uint 
 #ifdef GRAPHICS
 	graphics = Graphics(this);
 #endif // GRAPHICS
-	info.initialize(this);
+	fx3d::info.initialize(this);
 }
 LBM::~LBM() {
-	info.print_finalize();
+	fx3d::info.print_finalize();
 	for(uint d=0u; d<get_D(); d++) delete lbm[d];
 	delete[] lbm;
 }
@@ -826,10 +827,10 @@ void LBM::do_time_step() { // call kernel_stream_collide to perform one LBM time
 }
 
 void LBM::run(const ulong steps) { // initializes the LBM simulation (copies data to device and runs initialize kernel), then runs LBM
-	info.append(steps, get_t());
+	fx3d::info.append(steps, get_t());
 	if(!initialized) {
 		initialize();
-		info.print_initialize(); // only print setup info if the setup is new (run() was not called before)
+		fx3d::info.print_initialize(); // only print setup info if the setup is new (run() was not called before)
 	}
 	Clock clock;
 	for(ulong i=1ull; i<=steps; i++) {
@@ -839,7 +840,7 @@ void LBM::run(const ulong steps) { // initializes the LBM simulation (copies dat
 #endif // INTERACTIVE_GRAPHICS_ASCII || INTERACTIVE_GRAPHICS
 		clock.start();
 		do_time_step();
-		info.update(clock.stop());
+		fx3d::info.update(clock.stop());
 	}
 	if(get_D()>1u) for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue(); // wait for everything to finish (multi-GPU only)
 }
@@ -908,7 +909,7 @@ void LBM::update_moving_boundaries() { // mark/unmark nodes next to TYPE_S nodes
 
 #if defined(PARTICLES)&&!defined(FORCE_FIELD)
 void LBM::integrate_particles(const ulong steps, const uint time_step_multiplicator) { // intgegrate passive tracer particles forward in time in stationary flow field
-	info.append(steps, get_t());
+	fx3d::info.append(steps, get_t());
 	Clock clock;
 	for(ulong i=1ull; i<=steps; i+=(ulong)time_step_multiplicator) {
 #if defined(INTERACTIVE_GRAPHICS)||defined(INTERACTIVE_GRAPHICS_ASCII)
@@ -919,7 +920,7 @@ void LBM::integrate_particles(const ulong steps, const uint time_step_multiplica
 		for(uint d=0u; d<get_D(); d++) lbm[d]->enqueue_integrate_particles(time_step_multiplicator);
 		for(uint d=0u; d<get_D(); d++) lbm[d]->finish_queue();
 		for(uint d=0u; d<get_D(); d++) lbm[d]->increment_time_step(time_step_multiplicator);
-		info.update(clock.stop());
+		fx3d::info.update(clock.stop());
 	}
 }
 #endif // PARTICLES&&!FORCE_FIELD
@@ -927,10 +928,10 @@ void LBM::integrate_particles(const ulong steps, const uint time_step_multiplica
 void LBM::write_status(const string& path) { // write LBM status report to a .txt file
 	string status = "";
 	status += "Grid Resolution = ("+to_string(Nx)+", "+to_string(Ny)+", "+to_string(Nz)+")\n";
-	status += "LBM type = D"+string(get_velocity_set()==9 ? "2" : "3")+"Q"+to_string(get_velocity_set())+" "+info.collision+"\n";
-	status += "Memory Usage = "+to_string(info.cpu_mem_required)+" MB (CPU), "+to_string(info.gpu_mem_required)+" MB (GPU)\n";
+	status += "LBM type = D"+string(get_velocity_set()==9 ? "2" : "3")+"Q"+to_string(get_velocity_set())+" "+fx3d::info.collision+"\n";
+	status += "Memory Usage = "+to_string(fx3d::info.cpu_mem_required)+" MB (CPU), "+to_string(fx3d::info.gpu_mem_required)+" MB (GPU)\n";
 	status += "Maximum Allocation Size = "+to_string((uint)(get_N()*(ulong)(get_velocity_set()*sizeof(fpxx))/1048576ull))+" MB\n";
-	status += "Time Step = "+to_string(get_t())+" / "+(info.steps==max_ulong ? "infinite" : to_string(info.steps))+"\n";
+	status += "Time Step = "+to_string(get_t())+" / "+(fx3d::info.steps==max_ulong ? "infinite" : to_string(fx3d::info.steps))+"\n";
 	status += "Kinematic Viscosity = "+to_string(get_nu())+"\n";
 	status += "Relaxation Time = "+to_string(get_tau())+"\n";
 	status += "Maximum Reynolds Number = "+to_string(get_Re_max())+"\n";
@@ -998,9 +999,9 @@ void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path) const { // wri
 	file.close();
 	delete[] points;
 	delete[] triangles;
-	info.allow_rendering = false; // temporarily disable interactive rendering
+	fx3d::info.allow_rendering = false; // temporarily disable interactive rendering
 	print_info("File \""+filename+"\" saved.");
-	info.allow_rendering = true;
+	fx3d::info.allow_rendering = true;
 }
 void LBM::voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // voxelize triangle mesh
 	const Mesh* mesh = read_stl(path, this->size(), center, rotation, size);
@@ -1097,13 +1098,13 @@ bool LBM::Graphics::next_frame(const ulong total_time_steps, const float video_l
 }
 void LBM::Graphics::print_frame() { // preview current frame in console
 #ifndef INTERACTIVE_GRAPHICS_ASCII
-	info.allow_rendering = false; // temporarily disable interactive rendering
+	fx3d::info.allow_rendering = false; // temporarily disable interactive rendering
 	int* image_data = draw_frame(); // make sure the frame is fully rendered
 	Image* image = new Image(camera.width, camera.height, image_data);
 	println();
 	print_image(image);
 	delete image;
-	info.allow_rendering = true;
+	fx3d::info.allow_rendering = true;
 #endif // INTERACTIVE_GRAPHICS_ASCII
 }
 void encode_image(Image* image, const string& filename, const string& extension, std::atomic_int* running_encoders) {
@@ -1117,7 +1118,7 @@ void LBM::Graphics::write_frame(const string& path, const string& name, const st
 	write_frame(0u, 0u, camera.width, camera.height, path, name, extension, print_preview);
 }
 void LBM::Graphics::write_frame(const uint x1, const uint y1, const uint x2, const uint y2, const string& path, const string& name, const string& extension, bool print_preview) { // save a cropped current frame with two corner points (x1,y1) and (x2,y2)
-	info.allow_rendering = false; // temporarily disable interactive rendering
+	fx3d::info.allow_rendering = false; // temporarily disable interactive rendering
 	int* image_data = draw_frame(); // make sure the frame is fully rendered
 	const string filename = default_filename(path, name, extension, lbm->get_t());
 	const uint xa=max(min(x1, x2), 0u), xb=min(max(x1, x2), camera.width ); // sort coordinates if necessary
@@ -1134,7 +1135,7 @@ void LBM::Graphics::write_frame(const uint x1, const uint y1, const uint x2, con
 	running_encoders++;
 	thread encoder(encode_image, image, filename, extension, &running_encoders); // the main bottleneck in rendering images to the hard disk is .png encoding, so encode image in new thread
 	encoder.detach(); // detatch thread so it can run concurrently
-	info.allow_rendering = true;
+	fx3d::info.allow_rendering = true;
 }
 void LBM::Graphics::write_frame_png(const string& path, bool print_preview) { // save current frame as .png file (smallest file size, but slow)
 	write_frame(path, "image", ".png", print_preview);

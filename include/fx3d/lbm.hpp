@@ -1,10 +1,13 @@
 #pragma once
 
-#include "defines.hpp"
-#include "opencl.hpp"
-#include "graphics.hpp"
-#include "units.hpp"
-#include "info.hpp"
+#include <utils/defines.hpp>
+#include <utils/opencl.hpp>
+#include <utils/graphics.hpp>
+#include <utils/units.hpp>
+#include <fx3d/info.hpp>
+
+namespace fx3d
+{
 
 uint bytes_per_cell_host(); // returns the number of Bytes per cell allocated in host memory
 uint bytes_per_cell_device(); // returns the number of Bytes per cell allocated in device memory
@@ -553,3 +556,5 @@ public:
 	Graphics graphics;
 #endif // GRAPHICS
 }; // LBM
+
+}

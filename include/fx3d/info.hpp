@@ -1,6 +1,9 @@
 #pragma once
 
-#include "utilities.hpp"
+#include <utils/utilities.hpp>
+
+namespace fx3d
+{
 
 class LBM;
 struct Info { // contains redundant information for console printing
@@ -20,3 +23,5 @@ struct Info { // contains redundant information for console printing
 	void print_finalize(); // disables interactive rendering
 };
 extern Info info; // declared in info.cpp
+
+}

@@ -1,9 +1,9 @@
-#include "lbm.hpp"
+#include <fx3d/lbm.hpp>
 
 
 int main(int argc, char** argv) {
 
-	LBM lbm(128u, 256u, 256u, 0.005f, 0.0f, 0.0f, -0.0002f, 0.0001f);
+	fx3d::LBM lbm(128u, 256u, 256u, 0.005f, 0.0f, 0.0f, -0.0002f, 0.0001f);
     std::cout << "Created LBM" << std::endl;
 	// ###################################################################################### define geometry ######################################################################################
 	const uint Nx=lbm.get_Nx(), Ny=lbm.get_Ny(), Nz=lbm.get_Nz(); 

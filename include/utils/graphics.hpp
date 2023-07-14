@@ -5,8 +5,8 @@
 //#define INTERACTIVE_GRAPHICS_ASCII
 //#define GRAPHICS
 
-#include "defines.hpp"
-#include "utilities.hpp"
+#include <utils/defines.hpp>
+#include <utils/utilities.hpp>
 #include <atomic>
 
 extern vector<string> main_arguments; // console arguments
