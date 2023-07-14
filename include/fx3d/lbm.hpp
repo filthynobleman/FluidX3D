@@ -341,7 +341,7 @@ public:
 		inline const T operator()(const ulong i, const uint dimension) const { return reference(i, dimension); } // array of structures
 		inline void read_from_device() {
 // #ifndef UPDATE_FIELDS
-		if (fx3d::Settings::IsFeatureEnabled(fx3d::Feature::UPDATE_FIELDS))
+		if (!fx3d::Settings::IsFeatureEnabled(fx3d::Feature::UPDATE_FIELDS))
 		{
 			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) lbm->lbm[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
 		}

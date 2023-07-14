@@ -688,6 +688,9 @@ void LBM::sanity_checks_constructor(const vector<Device_Info>& device_infos, con
 	{
 		if(fx!=0.0f||fy!=0.0f||fz!=0.0f) 
 			print_error("Volume force is set in LBM constructor in main_setup(), but VOLUME_FORCE is not enabled.");
+	}
+	else
+	{
 		if (!Settings::IsFeatureEnabled(Feature::FORCE_FIELD))
 		{
 			if(fx==0.0f&&fy==0.0f&&fz==0.0f) 
@@ -1103,7 +1106,7 @@ int* LBM::Graphics::draw_frame() {
 		const int* bitmap_d = lbm->lbm[d]->graphics.get_bitmap(); // each domain renders its own frame
 		const int* zbuffer_d = lbm->lbm[d]->graphics.get_zbuffer();
 		for(uint i=0u; i<camera.width*camera.height; i++) {
-			if (GraphicsSettings::IsAlphaEnabled())
+			if (!GraphicsSettings::IsAlphaEnabled())
 			{
 				const int zdi = zbuffer_d[i];
 				if(zdi>zbuffer[i]) {
