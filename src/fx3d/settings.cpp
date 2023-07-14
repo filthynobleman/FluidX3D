@@ -12,9 +12,12 @@
 #include <fx3d/settings.hpp>
 
 
-fx3d::VelocitySet fx3d::Settings::m_VSet        = fx3d::VelocitySet::D3Q19;
-fx3d::RelaxTime fx3d::Settings::m_RTime         = fx3d::RelaxTime::SRT;
-fx3d::DDFCompression fx3d::Settings::m_Compr    = fx3d::DDFCompression::FP16S;
+// fx3d::VelocitySet fx3d::Settings::m_VSet        = fx3d::VelocitySet::D3Q19;
+// fx3d::RelaxTime fx3d::Settings::m_RTime         = fx3d::RelaxTime::SRT;
+// fx3d::DDFCompression fx3d::Settings::m_Compr    = fx3d::DDFCompression::FP16S;
+fx3d::VelocitySet fx3d::Settings::m_VSet        = (fx3d::VelocitySet)0;
+fx3d::RelaxTime fx3d::Settings::m_RTime         = (fx3d::RelaxTime)0;
+fx3d::DDFCompression fx3d::Settings::m_Compr    = (fx3d::DDFCompression)0;
 fx3d::Feature fx3d::Settings::m_Features        = (fx3d::Feature)0;
 
 

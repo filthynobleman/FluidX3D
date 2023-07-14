@@ -1,4 +1,5 @@
 #include <fx3d/lbm.hpp>
+#include <fx3d/settings.hpp>
 
 using namespace fx3d;
 
@@ -428,9 +429,9 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	kernel_graphics_flags_mc = Kernel(device, lbm->get_N(), "graphics_flags_mc", lbm->flags, camera_parameters, bitmap, zbuffer);
 	kernel_graphics_field = Kernel(device, lbm->get_N(), "graphics_field", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0);
 #ifndef D2Q9
-	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Nz()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 3D
+	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Ny()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Nz()/fx3d::GraphicsSettings::GetStreamlineSparse()), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 3D
 #else // D2Q9
-	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/GRAPHICS_STREAMLINE_SPARSE)*(lbm->get_Ny()/GRAPHICS_STREAMLINE_SPARSE), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 2D
+	kernel_graphics_streamline = Kernel(device, (lbm->get_Nx()/fx3d::GraphicsSettings::GetStreamlineSparse())*(lbm->get_Ny()/fx3d::GraphicsSettings::GetStreamlineSparse()), "graphics_streamline", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer, 0, 0, 0, 0); // 2D
 #endif // D2Q9
 	kernel_graphics_q = Kernel(device, lbm->get_N(), "graphics_q", lbm->flags, lbm->u, camera_parameters, bitmap, zbuffer);
 
@@ -498,17 +499,17 @@ int* LBM_Domain::Graphics::get_zbuffer() { // returns pointer to zbuffer
 
 string LBM_Domain::Graphics::device_defines() const { return
 	"\n	#define GRAPHICS"
-	"\n	#define def_background_color " +to_string(GRAPHICS_BACKGROUND_COLOR)+""
+	"\n	#define def_background_color " +to_string(fx3d::GraphicsSettings::GetBackgroundColor())+""
 	"\n	#define def_screen_width "     +to_string(camera.width)+"u"
 	"\n	#define def_screen_height "    +to_string(camera.height)+"u"
-	"\n	#define def_scale_u "          +to_string(1.0f/(0.57735027f*(GRAPHICS_U_MAX)))+"f"
-	"\n	#define def_scale_Q_min "      +to_string(GRAPHICS_Q_CRITERION)+"f"
-	"\n	#define def_scale_F "          +to_string(1.0f/(GRAPHICS_F_MAX))+"f"
-	"\n	#define def_streamline_sparse "+to_string(GRAPHICS_STREAMLINE_SPARSE)+"u"
-	"\n	#define def_streamline_length "+to_string(GRAPHICS_STREAMLINE_LENGTH)+"u"
+	"\n	#define def_scale_u "          +to_string(1.0f/(0.57735027f*(fx3d::GraphicsSettings::GetUMax())))+"f"
+	"\n	#define def_scale_Q_min "      +to_string(fx3d::GraphicsSettings::GetQCriterion())+"f"
+	"\n	#define def_scale_F "          +to_string(1.0f/(fx3d::GraphicsSettings::GetFMax()))+"f"
+	"\n	#define def_streamline_sparse "+to_string(fx3d::GraphicsSettings::GetStreamlineSparse())+"u"
+	"\n	#define def_streamline_length "+to_string(fx3d::GraphicsSettings::GetStreamlineLength())+"u"
 	"\n	#define def_n "                +to_string(1.333f)+"f" // refractive index of water for raytracing graphics
-	"\n	#define def_attenuation "      +to_string(ln(GRAPHICS_RAYTRACING_TRANSMITTANCE)/(float)max(max(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz()))+"f" // (negative) attenuation parameter for raytracing graphics
-	"\n	#define def_absorption_color " +to_string(GRAPHICS_RAYTRACING_COLOR)+"" // absorption color of fluid for raytracing graphics
+	"\n	#define def_attenuation "      +to_string(ln(fx3d::GraphicsSettings::GetRaytracingTransmittance())/(float)max(max(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz()))+"f" // (negative) attenuation parameter for raytracing graphics
+	"\n	#define def_absorption_color " +to_string(fx3d::GraphicsSettings::GetRaytracingColor())+"" // absorption color of fluid for raytracing graphics
 
 	"\n	#define COLOR_S (127<<16|127<<8|127)" // (stationary or moving) solid boundary
 	"\n	#define COLOR_E (  0<<16|255<<8|  0)" // equilibrium boundary (inflow/outflow)
