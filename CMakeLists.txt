@@ -20,7 +20,7 @@ include_directories("${PROJECT_SOURCE_DIR}/src/X11/include")
 include_directories("${PROJECT_SOURCE_DIR}/ext/json/include")
 
 find_package(OpenCL REQUIRED)
-if(${OpenCL_VERSION_MAJOR} EQUAL 1 AND ${OpenCL_VERSION_MAJOR} LESS_EQUAL 2)
+if(${OpenCL_VERSION_MAJOR} EQUAL 1 AND ${OpenCL_VERSION_MINOR} LESS_EQUAL 2)
     include_directories("${OpenCL_INCLUDE_DIR}")
 else()
     include_directories("${PROJECT_SOURCE_DIR}/src/OpenCL/include")
