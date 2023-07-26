@@ -83,11 +83,45 @@ fx3d::LBM* fx3d::CollidingDropletsInit(const nlohmann::json& json)
 
 
 
+bool fx3d::Scene::is_boundary(uint x, uint y, uint z) {
+	return x==0u || x==lbm->get_Nx()-1u || y==0u || y==lbm->get_Ny()-1u || z==0u || z==lbm->get_Nz()-1u;
+}
 
+void fx3d::Scene::instantiate() {
 
+}
 
+fx3d::Scene::Scene(const nlohmann::json& config) {
+	uint Nx = 1, Ny = 1, Nz = 1;
+	float nu = 1.0f/6.0f, sigma=0.0f, alpha=0.0f, beta=0.0f;
+	float fx = 0.0f, fy=0.0f, fz = 0.0f;
+	uint particles_N = 0u;
+	float particles_rho = 0.0f;
+	
+	if (config.contains("sim_params")) {
+		nlohmann::json sim_config = config["sim_params"];
+		Nx = sim_config.contains("Nx") ? sim_config["Nx"] : 1u;
+		Ny = sim_config.contains("Ny") ? sim_config["Ny"] : 1u;
+		Nz = sim_config.contains("Nz") ? sim_config["Nz"] : 1u;
+		nu = sim_config.contains("nu") ? sim_config["nu"] : 1.0f/6.0f;
+		sigma = sim_config.contains("sigma") ? sim_config["sigma"] : 0.0f;
+		alpha = sim_config.contains("alpha") ? sim_config["alpha"] : 0.0f;
+		beta = sim_config.contains("beta") ? sim_config["beta"] : 0.0f;
+		fx = sim_config.contains("fx") ? sim_config["fx"] : 0.0f;
+		fy = sim_config.contains("fy") ? sim_config["fy"] : 0.0f;
+		fz = sim_config.contains("fz") ? sim_config["fz"] : 0.0f;
+		particles_N = sim_config.contains("P_n") ? sim_config["P_n"] : 0u;
+		particles_rho = sim_config.contains("P_rho") ? sim_config["P_rho"] : 0.0f;
+	} else {
+		// Big error
+	}
 
+	lbm = new LBM(Nx, Ny, Nz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
+}
 
+fx3d::Scene::~Scene() {
+	delete lbm;
+}
 
 
 
