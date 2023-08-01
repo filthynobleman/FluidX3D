@@ -544,7 +544,7 @@ public:
 
 		void set_camera_centered(const float rx=0.0f, const float ry=0.0f, const float fov=100.0f, const float zoom=1.0f); // set camera centered
 		void set_camera_free(const float3& p=float3(0.0f), const float rx=0.0f, const float ry=0.0f, const float fov=100.0f); // set camera free
-		bool next_frame(const ulong total_time_steps, const float video_length_seconds); // returns true once simulation time has progressed enough to render the next video frame for a 60fps video of specified length
+		bool next_frame(const ulong total_time_steps, const float video_length_seconds, const float fps=60.0f); // returns true once simulation time has progressed enough to render the next video frame for a 60fps video of specified length
 		void print_frame(); // preview preview of current frame in console
 		void write_frame(const string& path="", const string& name="image", const string& extension=".png", bool print_preview=false); // save current frame
 		void write_frame(const uint x1, const uint y1, const uint x2, const uint y2, const string& path="", const string& name="image", const string& extension=".png", bool print_preview=false); // save current frame cropped with two corner points (x1,y1) and (x2,y2)

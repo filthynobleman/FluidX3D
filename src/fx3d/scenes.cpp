@@ -12,6 +12,7 @@
 #include <fx3d/scenes.hpp>
 #include <utils/shapes.hpp>
 
+/*
 fx3d::LBMInitializer fx3d::DetermineScene(const std::string& Name)
 {
      if (Name == "dam_break")
@@ -80,50 +81,181 @@ fx3d::LBM* fx3d::CollidingDropletsInit(const nlohmann::json& json)
 
     return lbm;
 }
+*/
 
 
-
-bool fx3d::Scene::is_boundary(uint x, uint y, uint z) {
-	return x==0u || x==lbm->get_Nx()-1u || y==0u || y==lbm->get_Ny()-1u || z==0u || z==lbm->get_Nz()-1u;
+bool fx3d::Scene::is_boundary(uint x, uint y, uint z) const {
+	return x==0u || /*x==lbm->get_Nx()-1u ||*/ y==0u || y==lbm->get_Ny()-1u || z==0u || z==lbm->get_Nz()-1u;
 }
 
-void fx3d::Scene::instantiate() {
-
+bool fx3d::Scene::is_fluid(uint x, uint y, uint z) const {
+    return false;
 }
 
-fx3d::Scene::Scene(const nlohmann::json& config) {
-	uint Nx = 1, Ny = 1, Nz = 1;
-	float nu = 1.0f/6.0f, sigma=0.0f, alpha=0.0f, beta=0.0f;
-	float fx = 0.0f, fy=0.0f, fz = 0.0f;
-	uint particles_N = 0u;
-	float particles_rho = 0.0f;
-	
-	if (config.contains("sim_params")) {
-		nlohmann::json sim_config = config["sim_params"];
-		Nx = sim_config.contains("Nx") ? sim_config["Nx"] : 1u;
-		Ny = sim_config.contains("Ny") ? sim_config["Ny"] : 1u;
-		Nz = sim_config.contains("Nz") ? sim_config["Nz"] : 1u;
-		nu = sim_config.contains("nu") ? sim_config["nu"] : 1.0f/6.0f;
-		sigma = sim_config.contains("sigma") ? sim_config["sigma"] : 0.0f;
-		alpha = sim_config.contains("alpha") ? sim_config["alpha"] : 0.0f;
-		beta = sim_config.contains("beta") ? sim_config["beta"] : 0.0f;
-		fx = sim_config.contains("fx") ? sim_config["fx"] : 0.0f;
-		fy = sim_config.contains("fy") ? sim_config["fy"] : 0.0f;
-		fz = sim_config.contains("fz") ? sim_config["fz"] : 0.0f;
-		particles_N = sim_config.contains("P_n") ? sim_config["P_n"] : 0u;
-		particles_rho = sim_config.contains("P_rho") ? sim_config["P_rho"] : 0.0f;
-	} else {
-		// Big error
+bool fx3d::Scene::is_static(uint x, uint y, uint z) const {
+    return false;
+}
+
+void fx3d::Scene::make_obstacle(const Mesh* geometry) {
+	this->lbm->flags.write_to_device();
+	this->lbm->voxelize_mesh_on_device(geometry, TYPE_S);
+	this->lbm->flags.read_from_device();
+}
+
+void fx3d::Scene::make_fluid(const Mesh* geometry) {
+	this->lbm->flags.write_to_device();
+	this->lbm->voxelize_mesh_on_device(geometry, TYPE_F);
+	this->lbm->flags.read_from_device();
+}
+
+Mesh *fx3d::Scene::load_mesh_stl(const string &stl_path, const float3 &center, const float3x3 &rotation, const float3& scale, const float size) const {
+    auto out = read_stl(stl_path, this->lbm->size(), center, rotation, size);
+	out->scale(scale);
+	return out;
+}
+
+void fx3d::Scene::run() {
+	for (uint t = 0; t < sim_steps; t++) {
+		this->lbm->run(update_dt);
+		if (is_current_frame_output(sim_steps, out_seconds, fps)) {
+			export_frame();
+		}
 	}
+}
 
-	lbm = new LBM(Nx, Ny, Nz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
+void fx3d::Scene::step() {
+	this->lbm->run(1u);
+}
+
+void fx3d::Scene::export_frame() {
+	render_current_frame(out_dir, "frame");
+}
+
+void fx3d::Scene::render_current_frame(const std::string &out_dir, const std::string &name) const
+{
+    this->lbm->graphics.write_frame(out_dir, name);
+}
+
+bool fx3d::Scene::is_current_frame_output(const ulong sim_steps, const float out_len_s, const float fps) const {
+    return this->lbm->graphics.next_frame(sim_steps, out_len_s, fps);
+}
+
+fx3d::Scene::Scene(const nlohmann::json &config) {
+
+	/* Simulation parameters + create LBM */
+
+	config_sim_params(config);
+
+	this->lbm = new LBM(Nx, Ny, Nz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
+
+	/* Obstacles and fluid bodies */
+
+	config_obstacles(config);
+	config_fluid_bodies(config);
+	
+	/* Ad-hoc grid definition */
+
+	custom_grid_initialization();
+
+	/* Graphics config and initialize */
+
+	config_graphics(config);
+	lbm->run(0u);
+
+	/* Export configuration */
+
+	config_export(config);
+
 }
 
 fx3d::Scene::~Scene() {
-	delete lbm;
+	delete this->lbm;
 }
 
 
+void fx3d::Scene::custom_grid_initialization() {
+    for (ulong n=0ull; n < this->lbm->get_N(); n++) { 
+        uint x=0u, y=0u, z=0u; 
+		lbm->coordinates(n, x, y, z);
+		if (is_fluid(x, y, z)) {
+			lbm->flags[n] = TYPE_F;
+		} else if (is_boundary(x, y, z) || is_static(x, y, z)) {
+			lbm->flags[n] = TYPE_S;
+		}
+	}
+}
+
+void fx3d::Scene::config_sim_params(const nlohmann::json &config) {    
+	if (config.contains("sim_params")) {
+		nlohmann::json sim_config = config["sim_params"];
+		Nx = sim_config.contains("Nx") ? sim_config["Nx"] : Nx;
+		Ny = sim_config.contains("Ny") ? sim_config["Ny"] : Ny;
+		Nz = sim_config.contains("Nz") ? sim_config["Nz"] : Nz;
+		nu = sim_config.contains("nu") ? sim_config["nu"] : nu;
+		sigma = sim_config.contains("sigma") ? sim_config["sigma"] : sigma;
+		alpha = sim_config.contains("alpha") ? sim_config["alpha"] : alpha;
+		beta = sim_config.contains("beta") ? sim_config["beta"] : beta;
+		fx = sim_config.contains("fx") ? sim_config["fx"] : fx;
+		fy = sim_config.contains("fy") ? sim_config["fy"] : fy;
+		fz = sim_config.contains("fz") ? sim_config["fz"] : fz;
+		particles_N = sim_config.contains("P_n") ? sim_config["P_n"] : particles_N;
+		particles_rho = sim_config.contains("P_rho") ? sim_config["P_rho"] : particles_rho;
+	} 
+}
+
+void fx3d::Scene::config_obstacles(const nlohmann::json &config) {
+	if (config.contains("obstacles")) {
+		nlohmann::json obstacles = config["obstacles"];
+		for (auto ptr = obstacles.begin(); ptr != obstacles.end(); ptr++) {
+			auto obst = *ptr;
+			std::vector<float> center = obst["center"];
+			std::vector<float> rotation = obst["rotation"];
+			std::vector<float> scale = obst["scale"];
+			const Mesh* geometry = load_mesh_stl(
+				obst["mesh_path"], float3(center[0], center[1], center[2]),
+				euler(float3(rotation[0], rotation[1], rotation[2])), 
+				float3(scale[0], scale[1], scale[2]), (float)obst["size"]
+			);
+			make_obstacle(geometry);
+			delete geometry;
+		}
+	}
+}
+
+void fx3d::Scene::config_fluid_bodies(const nlohmann::json &config) {
+	if (config.contains("fluids")) {
+		nlohmann::json fluids = config["fluids"];
+		for (auto ptr = fluids.begin(); ptr != fluids.end(); ptr++) {
+			auto fluid = *ptr;
+			std::vector<float> center = fluid["center"];
+			std::vector<float> rotation = fluid["rotation"];
+			std::vector<float> scale = fluid["scale"];
+			const Mesh* geometry = load_mesh_stl(
+				fluid["mesh_path"], float3(center[0], center[1], center[2]),
+				euler(float3(rotation[0], rotation[1], rotation[2])), 
+				float3(scale[0], scale[1], scale[2]), (float)fluid["size"]
+			);
+			make_fluid(geometry);	
+			delete geometry;		
+		}
+	}
+}
+
+void fx3d::Scene::config_export(const nlohmann::json &config) {
+	if (config.contains("export")) {
+		nlohmann::json exp_config = config["export"];
+		out_dir = exp_config["out_dir"];
+		fps = exp_config["fps"];
+		sim_steps = exp_config["simulation_steps"];
+		update_dt = exp_config["update_dt"];
+		out_seconds = exp_config["video_seconds"];
+	}
+}
+
+void fx3d::Scene::config_graphics(const nlohmann::json &config) {
+	lbm->graphics.visualization_modes = VIS_PHI_RASTERIZE|VIS_FLAG_SURFACE;
+	// lbm->graphics.set_camera_centered(0.0f, -0.5f);
+}
 
 
 

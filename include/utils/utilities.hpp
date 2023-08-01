@@ -1184,6 +1184,12 @@ inline float3& float3::operator=(const float3x3& m) { // extract diagonal of mat
 	this->z = m.zz;
 	return *this;
 }
+inline float3x3 euler(const float3& angles) {
+	float3x3 X(float3(1.0, 0.0, 0.0), radians(angles.x));
+	float3x3 Y(float3(0.0, 1.0, 0.0), radians(angles.y));
+	float3x3 Z(float3(0.0, 0.0, 1.0), radians(angles.z));
+	return X * (Y * Z);
+}
 
 inline string to_string(float x); // forward-declare to_string(float x) for stringify()
 struct floatNxN; // forward-declare floatNxN
@@ -4222,6 +4228,15 @@ struct Mesh { // triangle mesh
 			p0[i] = scale*(p0[i]-center)+center;
 			p1[i] = scale*(p1[i]-center)+center;
 			p2[i] = scale*(p2[i]-center)+center;
+		}
+		pmin = scale*(pmin-center)+center;
+		pmax = scale*(pmax-center)+center;
+	}
+	inline void scale(const float3& scale) {
+		for(uint i=0u; i<triangle_number; i++) {
+			p0[i] = scale.x*(p0[i]-center)+center;
+			p1[i] = scale.y*(p1[i]-center)+center;
+			p2[i] = scale.z*(p2[i]-center)+center;
 		}
 		pmin = scale*(pmin-center)+center;
 		pmax = scale*(pmax-center)+center;

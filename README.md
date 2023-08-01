@@ -46,21 +46,33 @@ The JSON configuration file contains two attributes:
  - `num_frames`: the number of frames to simulate before exporting the rendering. Default value is `5000`.
 
 
-## Adding new scenes
-Suppose you want to add a new scene, which you want to call `MyScene`. First open the file `/include/fx3d/scenes.hpp`
-and add the signature for the function
-```c++
-    fx3d::LBM* MySceneInit(const nlohmann::json& json);
-```
+## Scenes usage
 
-Then, open the file `/src/fx3d/scenes.cpp` and implement the function `fx3d::MySceneInit()`.
-It is important that you configure the project's settings **BEFORE** you do anything else, so every call to the
-methods of `fx3d::Settings` and `fx3d::GraphicsSettings` must be done at the very beginning of the function.  
-All the settings that in the original library are changed with pre-processor directives are now handled using
-static methods from the two classes mentioned above. In particular, refer to the methods
-```c++
-    fx3d::Settings::EnableFeature()
-    fx3d::Settings::SetVelocitySet()
-    fx3d::Settings::SetCollisionType()
-```
+### Basics
+The `fx3d::Scene` class is the main API object, and it is already usable as-is. 
+It can be configured by giving as input to the constructor a json file such as the one you can find in `examples/config.json`. 
 
+> Important: `config.export.out_dir` **must** end with path separator (`\\` or `/` depending on your platform) and **must not** have dots in it. This is due to the implementation of the save functions in FluidX3D. If you don't do this, arbitrarily bad things might happen - but most likely, you just won't find your output. You've been warned
+
+The aspects of Scenes you can configure without writing a single line of code are the following:
+* A set of simulation parameters, generally all the ones implemented for FluidX3D are available
+* Disposition of solid, static obstacles in the scene, with mesh-specified geometry
+* Disposition of dynamic fluid bodies in the scene, with mesh-specified geometry
+
+Some important caveats: 
+* Scales and translations are defined with integer units. While the values are still interpreted as floating point, the embedding space of the simulation domain is the discretized real interval `[0; N_i-1]`, where `N_i` is the specified resolution for the `i`-th dimension of the domain
+* Meshes have to be in STL format. Everything else won't be loaded or will throw exceptions
+* The `size` attribute is used when loading the mesh, and it indicates the lenght of the longest side of the mesh's bounding box after rescaling. On top of this, you may further scale the mesh to your liking using the `scale` attribute.
+
+### What if this is not enough?
+
+`fx3d::Scene` is designed to be extended with subclasses. The following features can be reimplemented:
+1. `fx3d::Scene::config_sim_params` -- interface to copy simulation parameters from config
+2. `fx3d::Scene::config_obstacles` -- interface to load obstacles geometry into the scene
+3. `fx3d::Scene::config_fluid_bodies` -- interface to load the initial state of fluid bodies into the scene
+4. `fx3d::Scene::config_export` -- interface to configure export settings
+5. `fx3d::Scene::config_graphics` -- interface to configure graphics settings, e.g., rendering mode (see `defines.hpp`) or camera positioning using the `Camera` object provided by FluidX3D
+6. `fx3d::Scene::is_fluid` -- describes which cells are fluid in the initial state given the `x,y,z` coordinates
+7. `fx3d::Scene::is_static` -- describes which cells are solid obstacles given the `x,y,z` coordinates
+8. `fx3d::Scene::is_boundary` -- describes which cells are domain boundary given the `x,y,z` coordinates
+8. `fx3d::Scene::export_frame` -- procedure to export the contents of the current frame (for base `Scene`s, it renders the current frame from a single view)

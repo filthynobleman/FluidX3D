@@ -89,6 +89,7 @@ void main_graphics() {
 }
 #endif // GRAPHICS
 
+/*
 void main_physics() {
 	info.print_logo();
 	main_setup(); // execute setup
@@ -107,4 +108,5 @@ int main(int argc, char* argv[]) {
 	compute_thread.join();
 	return 0;
 }
+*/
 #endif // GRAPHICS

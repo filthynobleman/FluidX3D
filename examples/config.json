@@ -1,0 +1,41 @@
+{
+    "export": {
+        "out_dir": "C:\\Users\\Daniele\\Documents\\Research\\GLADIA\\FluidX3D\\bin\\export\\test\\",
+        "fps": 30,
+        "simulation_steps": 900,
+        "update_dt": 10,
+        "video_seconds": 3
+    },
+    "sim_params": {
+        "Nx": 256,
+        "Ny": 256,
+        "Nz": 256,
+        "fx": 0.0,
+        "fy": 0.0,
+        "fz": -0.0002,
+        "nu": 0.005,
+        "sigma": 0.0001,
+        "alpha": 0.0,
+        "beta": 0.0,
+        "P_n": 0,
+        "P_rho": 0.0
+    },
+    "obstacles": [
+        {
+            "mesh_path": ".\\test\\ship.stl",
+            "center": [128.0, 64.0, 64.0],
+            "rotation": [0.0, 0.0, 90.0],
+            "scale": [1.0, 1.0, 1.0],
+            "size": 86.0
+        }
+    ],
+    "fluids": [
+        {
+            "mesh_path": ".\\test\\cube.stl",
+            "center": [128.0, 164.0, 64.0],
+            "rotation": [90.0, 0.0, 0.0],
+            "scale": [1.0, 1.0, 1.0],
+            "size": 70.0
+        }
+    ]
+}

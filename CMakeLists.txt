@@ -47,7 +47,9 @@ set_property(TARGET FX3D PROPERTY CXX_STANDARD 17)
 
 
 # Executable
-add_executable(FluidX3D "${PROJECT_SOURCE_DIR}/src/fluidx.cpp")
+add_executable(FluidX3D "${PROJECT_SOURCE_DIR}/src/fluidx.cpp"
+                        "${PROJECT_SOURCE_DIR}/src/graphics.cpp"
+                        "${PROJECT_SOURCE_DIR}/src/info.cpp")
 target_link_libraries(FluidX3D FX3D OpenCL::OpenCL)
 set_property(TARGET FluidX3D PROPERTY CXX_STANDARD 17) 
 

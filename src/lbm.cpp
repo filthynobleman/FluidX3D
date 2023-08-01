@@ -1138,8 +1138,8 @@ void LBM::Graphics::set_camera_free(const float3& p, const float rx, const float
 	camera.zoom = 1E16f;
 	camera.pos = p;
 }
-bool LBM::Graphics::next_frame(const ulong total_time_steps, const float video_length_seconds) { // returns true once simulation time has progressed enough to render the next video frame for a 60fps video of specified length
-	const uint new_frame = to_uint((float)lbm->get_t()/(float)total_time_steps*video_length_seconds*60.0f);
+bool LBM::Graphics::next_frame(const ulong total_time_steps, const float video_length_seconds, const float fps) { // returns true once simulation time has progressed enough to render the next video frame for a 60fps video of specified length
+	const uint new_frame = to_uint((float)lbm->get_t()/(float)total_time_steps*video_length_seconds*fps);
 	if(new_frame!=last_exported_frame) {
 		last_exported_frame = new_frame;
 		return true;
