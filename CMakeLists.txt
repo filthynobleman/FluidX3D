@@ -58,4 +58,4 @@ add_custom_command(
         TARGET FluidX3D POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${PROJECT_SOURCE_DIR}/skybox/skybox8k.png
-                ${PROJECT_SOURCE_DIR}/bin/skybox/skybox8k.png)
+                ${CMAKE_SOURCE_DIR}/bin/skybox/skybox8k.png)
