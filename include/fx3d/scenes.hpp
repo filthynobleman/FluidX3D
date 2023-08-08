@@ -75,7 +75,8 @@ public:
     void render_current_frame(const std::string& out_png, const std::string &name) const;
     bool is_current_frame_output(const ulong sim_steps, const float out_len_s, const float fps) const;
 
-    Scene(const nlohmann::json& config);
+    void configure(const nlohmann::json& config);
+    Scene() = default;
     ~Scene();
 
 };

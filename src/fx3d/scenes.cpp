@@ -140,7 +140,7 @@ bool fx3d::Scene::is_current_frame_output(const ulong sim_steps, const float out
     return this->lbm->graphics.next_frame(sim_steps, out_len_s, fps);
 }
 
-fx3d::Scene::Scene(const nlohmann::json &config) {
+void fx3d::Scene::configure(const nlohmann::json &config) {
 
 	/* Simulation parameters + create LBM */
 

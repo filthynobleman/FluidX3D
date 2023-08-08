@@ -14,7 +14,8 @@ void simulation_thread() {
     fx3d::Settings::EnableFeature(fx3d::Feature::SURFACE);
 	fx3d::Settings::EnableFeature(fx3d::Feature::MOVING_BOUNDARIES);
 
-	fx3d::Scene scene(j);
+	fx3d::Scene scene;
+	scene.configure(j);
 
 	scene.run();
 
