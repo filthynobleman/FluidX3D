@@ -11,6 +11,8 @@
  */
 #pragma once
 
+class Camera;
+
 namespace fx3d
 {
     
@@ -128,6 +130,8 @@ private:
     static float m_RTTrans;
     static int m_RTColor;
 
+    static Camera* m_Cam;
+
     GraphicsSettings() = delete;
     ~GraphicsSettings() = delete;
 public:
@@ -155,6 +159,8 @@ public:
     static int GetRaytracingRed();
     static int GetRaytracingGreen();
     static int GetRaytracingBlue();
+
+    static Camera& GetCamera();
 
 
 

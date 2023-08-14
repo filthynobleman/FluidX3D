@@ -3959,7 +3959,8 @@ inline void create_folder(const string& path) { // create folder if it not alrea
 #endif // UTILITIES_NO_CPP17
 }
 inline string create_file_extension(const string& filename, const string& extension) {
-	return filename.substr(0, filename.rfind('.'))+(extension.at(0)!='.'?".":"")+extension; // remove existing file extension if existing and replace it with new one
+	return std::filesystem::path(filename).replace_extension(extension).string();
+	// return filename.substr(0, filename.rfind('.'))+(extension.at(0)!='.'?".":"")+extension; // remove existing file extension if existing and replace it with new one
 }
 inline string read_file(const string& filename) {
 	std::ifstream file(filename, std::ios::in);

@@ -27,6 +27,7 @@ public:
 	uint fps_limit = 60u; // default value for screen frames per second limit
 	float fov = 100.0f; // field of view, default: 100
 	float zoom=0.5f*(float)min(width, height), dis=0.5f*(float)width/tan(fov*pif/360.0f); // zoom, distance from camera to rotation center
+	float zrad = 1.0f;
 	float3x3 R = float3x3(1.0f); // camera rotation matrix
 	double rx=0.5*pi, ry=pi; // rotation angles
 	float3 pos = float3(0.0f); // free camera position
@@ -71,6 +72,7 @@ public:
 	}
 
 	void set_zoom(const float rad) {
+		zrad = rad;
 		zoom = 0.5f*(float)min(width, height)/rad;
 		log_zoom = target_log_zoom = 4.0f*log(zoom);
 	}
@@ -295,7 +297,6 @@ private:
 	}
 };
 
-extern Camera camera;
 extern bool key_E, key_G, key_H, key_O, key_P, key_Q, key_T, key_Z; // defined in graphics.cpp
 extern bool key_1, key_2, key_3, key_4, key_5, key_6, key_7, key_8, key_9, key_0; // defined in graphics.cpp
 

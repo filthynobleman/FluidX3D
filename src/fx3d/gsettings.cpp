@@ -10,6 +10,7 @@
  * @date        2023-07-14
  */
 #include <fx3d/settings.hpp>
+#include <utils/graphics.hpp>
 
 
 int fx3d::GraphicsSettings::m_Width                 = 1920;
@@ -30,13 +31,29 @@ int fx3d::GraphicsSettings::m_SLineLength           = 128;
 float fx3d::GraphicsSettings::m_RTTrans             = 0.25f;
 int fx3d::GraphicsSettings::m_RTColor               = 0x005F7F;
 
+Camera* fx3d::GraphicsSettings::m_Cam               = new Camera();
 
+
+
+Camera& fx3d::GraphicsSettings::GetCamera() { return *m_Cam; }
 
 
 int fx3d::GraphicsSettings::GetWidth() { return m_Width; }
 int fx3d::GraphicsSettings::GetHeight() { return m_Height; }
-void fx3d::GraphicsSettings::SetWidth(int W) { m_Width = W; }
-void fx3d::GraphicsSettings::SetHeight(int H) { m_Height = H; }
+void fx3d::GraphicsSettings::SetWidth(int W) 
+{ 
+    m_Width = W;
+    m_Cam->width = m_Width;
+    m_Cam->update_matrix();
+    m_Cam->set_zoom(m_Cam->zrad);
+}
+void fx3d::GraphicsSettings::SetHeight(int H)
+{ 
+    m_Height = H; 
+    m_Cam->height = m_Height;
+    m_Cam->update_matrix();
+    m_Cam->set_zoom(m_Cam->zrad);
+}
 
 
 float fx3d::GraphicsSettings::GetAlpha() { return m_Alpha; }

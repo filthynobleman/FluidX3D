@@ -1,5 +1,6 @@
 #include <fx3d/lbm.hpp>
 #include <fx3d/settings.hpp>
+#include <filesystem>
 
 #include <sstream>
 
@@ -53,7 +54,15 @@ uint3 fx3d::resolution(const float3 box_aspect_ratio, const uint memory) { // in
 string fx3d::default_filename(const string& path, const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp
 	string time = "00000000"+to_string(t);
 	time = substring(time, length(time)-9u, 9u);
-	return create_file_extension((path=="" ? get_exe_path()+"export/" : path)+(name=="" ? "file" : name)+"-"+time, extension);
+	std::filesystem::path fspath(path);
+	if (path.empty())
+		fspath = std::filesystem::path(get_exe_path()) / std::filesystem::path("export");
+	std::filesystem::path fsname(name + "-" + time);
+	if (name.empty())
+		fsname = std::filesystem::path("file-" + time);
+	std::string pn = std::filesystem::absolute(fspath / fsname).string();
+	return create_file_extension(pn, extension);
+	// return create_file_extension((path=="" ? get_exe_path()+"export/" : path)+(name=="" ? "file" : name)+"-"+time, extension);
 }
 string fx3d::default_filename(const string& name, const string& extension, const ulong t) { // generate a default filename with timestamp at exe_path/export/
 	return default_filename("", name, extension, t);
@@ -398,8 +407,8 @@ string LBM_Domain::device_defines() const {
 #ifdef GRAPHICS
 void LBM_Domain::Graphics::allocate(Device& device) {
 	
-	bitmap = Memory<int>(device, camera.width*camera.height);
-	zbuffer = Memory<int>(device, camera.width*camera.height, 1u, lbm->get_D()>1u); // if there are multiple domains, allocate zbuffer also on host side
+	bitmap = Memory<int>(device, fx3d::GraphicsSettings::GetCamera().width*fx3d::GraphicsSettings::GetCamera().height);
+	zbuffer = Memory<int>(device, fx3d::GraphicsSettings::GetCamera().width*fx3d::GraphicsSettings::GetCamera().height, 1u, lbm->get_D()>1u); // if there are multiple domains, allocate zbuffer also on host side
 	camera_parameters = Memory<float>(device, 15u);
 	kernel_clear = Kernel(device, bitmap.length(), "graphics_clear", bitmap, zbuffer);
 
@@ -437,10 +446,10 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 }
 
 bool LBM_Domain::Graphics::update_camera() {
-	camera.update_matrix();
+	fx3d::GraphicsSettings::GetCamera().update_matrix();
 	bool change = false;
 	for(uint i=0u; i<15u; i++) {
-		const float data = camera.data(i);
+		const float data = fx3d::GraphicsSettings::GetCamera().data(i);
 		change |= (camera_parameters[i]!=data);
 		camera_parameters[i] = data;
 	}
@@ -449,7 +458,7 @@ bool LBM_Domain::Graphics::update_camera() {
 bool LBM_Domain::Graphics::enqueue_draw_frame(const int visualization_modes, const int slice_mode, const int slice_x, const int slice_y, const int slice_z) {
 	const bool camera_update = update_camera();
 	t_last_rendered_frame = lbm->get_t();
-	camera.key_update = false;
+	fx3d::GraphicsSettings::GetCamera().key_update = false;
 	if(camera_update) camera_parameters.enqueue_write_to_device(); // camera_parameters PCIe transfer and kernel_clear execution can happen simulataneously
 	kernel_clear.enqueue_run();
 	if (Settings::IsFeatureEnabled(Feature::SURFACE))
@@ -480,8 +489,8 @@ string LBM_Domain::Graphics::device_defines() const {
 
 	ss << "\n #define GRAPHICS";
 	ss << "\n #define def_background_color "  << to_string(fx3d::GraphicsSettings::GetBackgroundColor()) << "";
-	ss << "\n #define def_screen_width "      << to_string(camera.width) << "u";
-	ss << "\n #define def_screen_height "     << to_string(camera.height) << "u";
+	ss << "\n #define def_screen_width "      << to_string(fx3d::GraphicsSettings::GetCamera().width) << "u";
+	ss << "\n #define def_screen_height "     << to_string(fx3d::GraphicsSettings::GetCamera().height) << "u";
 	ss << "\n #define def_scale_u "           << to_string(1.0f/(0.57735027f*(fx3d::GraphicsSettings::GetUMax()))) << "f";
 	ss << "\n #define def_scale_Q_min "       << to_string(fx3d::GraphicsSettings::GetQCriterion()) << "f";
 	ss << "\n #define def_scale_F "           << to_string(1.0f/(fx3d::GraphicsSettings::GetFMax())) << "f";
@@ -1105,7 +1114,7 @@ int* LBM::Graphics::draw_frame() {
 	for(uint d=1u; d<lbm->get_D()&&new_frame; d++) {
 		const int* bitmap_d = lbm->lbm[d]->graphics.get_bitmap(); // each domain renders its own frame
 		const int* zbuffer_d = lbm->lbm[d]->graphics.get_zbuffer();
-		for(uint i=0u; i<camera.width*camera.height; i++) {
+		for(uint i=0u; i<fx3d::GraphicsSettings::GetCamera().width*fx3d::GraphicsSettings::GetCamera().height; i++) {
 			if (!GraphicsSettings::IsAlphaEnabled())
 			{
 				const int zdi = zbuffer_d[i];
@@ -1124,19 +1133,19 @@ int* LBM::Graphics::draw_frame() {
 }
 
 void LBM::Graphics::set_camera_centered(const float rx, const float ry, const float fov, const float zoom) {
-	camera.free = false;
-	camera.rx = 0.5*pi+((double)rx*pi/180.0);
-	camera.ry = pi-((double)ry*pi/180.0);
-	camera.fov = clamp((float)fov, 1E-6f, 179.0f);
-	camera.set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/zoom);
+	fx3d::GraphicsSettings::GetCamera().free = false;
+	fx3d::GraphicsSettings::GetCamera().rx = 0.5*pi+((double)rx*pi/180.0);
+	fx3d::GraphicsSettings::GetCamera().ry = pi-((double)ry*pi/180.0);
+	fx3d::GraphicsSettings::GetCamera().fov = clamp((float)fov, 1E-6f, 179.0f);
+	fx3d::GraphicsSettings::GetCamera().set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/zoom);
 }
 void LBM::Graphics::set_camera_free(const float3& p, const float rx, const float ry, const float fov) {
-	camera.free = true;
-	camera.rx = 0.5*pi+((double)rx*pi/180.0);
-	camera.ry = pi-((double)ry*pi/180.0);
-	camera.fov = clamp((float)fov, 1E-6f, 179.0f);
-	camera.zoom = 1E16f;
-	camera.pos = p;
+	fx3d::GraphicsSettings::GetCamera().free = true;
+	fx3d::GraphicsSettings::GetCamera().rx = 0.5*pi+((double)rx*pi/180.0);
+	fx3d::GraphicsSettings::GetCamera().ry = pi-((double)ry*pi/180.0);
+	fx3d::GraphicsSettings::GetCamera().fov = clamp((float)fov, 1E-6f, 179.0f);
+	fx3d::GraphicsSettings::GetCamera().zoom = 1E16f;
+	fx3d::GraphicsSettings::GetCamera().pos = p;
 }
 bool LBM::Graphics::next_frame(const ulong total_time_steps, const float video_length_seconds, const float fps) { // returns true once simulation time has progressed enough to render the next video frame for a 60fps video of specified length
 	const uint new_frame = to_uint((float)lbm->get_t()/(float)total_time_steps*video_length_seconds*fps);
@@ -1151,7 +1160,7 @@ void LBM::Graphics::print_frame() { // preview current frame in console
 #ifndef INTERACTIVE_GRAPHICS_ASCII
 	fx3d::info.allow_rendering = false; // temporarily disable interactive rendering
 	int* image_data = draw_frame(); // make sure the frame is fully rendered
-	Image* image = new Image(camera.width, camera.height, image_data);
+	Image* image = new Image(fx3d::GraphicsSettings::GetCamera().width, fx3d::GraphicsSettings::GetCamera().height, image_data);
 	println();
 	print_image(image);
 	delete image;
@@ -1166,16 +1175,20 @@ void encode_image(Image* image, const string& filename, const string& extension,
 	(*running_encoders)--;
 }
 void LBM::Graphics::write_frame(const string& path, const string& name, const string& extension, bool print_preview) { // save current frame as .png file (smallest file size, but slow)
-	write_frame(0u, 0u, camera.width, camera.height, path, name, extension, print_preview);
+	write_frame(0u, 0u, fx3d::GraphicsSettings::GetCamera().width, fx3d::GraphicsSettings::GetCamera().height, path, name, extension, print_preview);
 }
 void LBM::Graphics::write_frame(const uint x1, const uint y1, const uint x2, const uint y2, const string& path, const string& name, const string& extension, bool print_preview) { // save a cropped current frame with two corner points (x1,y1) and (x2,y2)
 	fx3d::info.allow_rendering = false; // temporarily disable interactive rendering
 	int* image_data = draw_frame(); // make sure the frame is fully rendered
 	const string filename = default_filename(path, name, extension, lbm->get_t());
-	const uint xa=max(min(x1, x2), 0u), xb=min(max(x1, x2), camera.width ); // sort coordinates if necessary
-	const uint ya=max(min(y1, y2), 0u), yb=min(max(y1, y2), camera.height);
+	// Create folder if not existing
+	std::filesystem::path fnpath(filename);
+	if (!std::filesystem::exists(fnpath.parent_path()))
+		std::filesystem::create_directories(fnpath.parent_path());
+	const uint xa=max(min(x1, x2), 0u), xb=min(max(x1, x2), fx3d::GraphicsSettings::GetCamera().width ); // sort coordinates if necessary
+	const uint ya=max(min(y1, y2), 0u), yb=min(max(y1, y2), fx3d::GraphicsSettings::GetCamera().height);
 	Image* image = new Image(xb-xa, yb-ya); // create local copy of frame buffer
-	for(uint y=0u; y<image->height(); y++) for(uint x=0u; x<image->width(); x++) image->set_color(x, y, image_data[camera.width*(ya+y)+(xa+x)]);
+	for(uint y=0u; y<image->height(); y++) for(uint x=0u; x<image->width(); x++) image->set_color(x, y, image_data[fx3d::GraphicsSettings::GetCamera().width*(ya+y)+(xa+x)]);
 #ifndef INTERACTIVE_GRAPHICS_ASCII
 	if(print_preview) {
 		println();

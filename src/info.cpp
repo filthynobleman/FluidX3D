@@ -93,10 +93,10 @@ void Info::print_update() const {
 	);
 #ifdef GRAPHICS
 	if(key_G) { // print camera settings
-		const string camera_position = "float3("+to_string(camera.pos.x/(float)lbm->get_Nx(), 6u)+"f*(float)Nx, "+to_string(camera.pos.y/(float)lbm->get_Ny(), 6u)+"f*(float)Ny, "+to_string(camera.pos.z/(float)lbm->get_Nz(), 6u)+"f*(float)Nz)";
-		const string camera_rx_ry_fov = to_string(degrees(camera.rx)-90.0, 1u)+"f, "+to_string(180.0-degrees(camera.ry), 1u)+"f, "+to_string(camera.fov, 1u)+"f";
-		const string camera_zoom = to_string(camera.zoom*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/(float)min(camera.width, camera.height), 6u)+"f";
-		if(camera.free) print_info("lbm.graphics.set_camera_free("+camera_position+", "+camera_rx_ry_fov+");");
+		const string camera_position = "float3("+to_string(fx3d::GraphicsSettings::GetCamera().pos.x/(float)lbm->get_Nx(), 6u)+"f*(float)Nx, "+to_string(fx3d::GraphicsSettings::GetCamera().pos.y/(float)lbm->get_Ny(), 6u)+"f*(float)Ny, "+to_string(fx3d::GraphicsSettings::GetCamera().pos.z/(float)lbm->get_Nz(), 6u)+"f*(float)Nz)";
+		const string camera_rx_ry_fov = to_string(degrees(fx3d::GraphicsSettings::GetCamera().rx)-90.0, 1u)+"f, "+to_string(180.0-degrees(fx3d::GraphicsSettings::GetCamera().ry), 1u)+"f, "+to_string(fx3d::GraphicsSettings::GetCamera().fov, 1u)+"f";
+		const string camera_zoom = to_string(fx3d::GraphicsSettings::GetCamera().zoom*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz())/(float)min(fx3d::GraphicsSettings::GetCamera().width, fx3d::GraphicsSettings::GetCamera().height), 6u)+"f";
+		if(fx3d::GraphicsSettings::GetCamera().free) print_info("lbm.graphics.set_camera_free("+camera_position+", "+camera_rx_ry_fov+");");
 		else print_info("lbm.graphics.set_camera_centered("+camera_rx_ry_fov+", "+camera_zoom+");");
 		key_G = false;
 	}

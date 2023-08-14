@@ -3,8 +3,6 @@
 vector<string> main_arguments = vector<string>(); // console arguments
 std::atomic_bool running = true;
 
-Camera camera;
-
 // reserved keys for graphics: W,A,S,D, I,J,K,L, F, R,U, V,B, C,VK_SPACE, Y,X, N,M
 //bool key_A=false, key_B=false, key_C=false, key_D=false, key_E=false, key_F=false, key_G=false, key_H=false, key_I=false, key_J=false, key_K=false, key_L=false, key_M=false;
 //bool key_N=false, key_O=false, key_P=false, key_Q=false, key_R=false, key_S=false, key_T=false, key_U=false, key_V=false, key_W=false, key_X=false, key_Y=false, key_Z=false;
@@ -17,28 +15,28 @@ uint light_sources_n = 0u; // number of light sources
 
 bool convert(int& rx, int& ry, float& rz, const float3& p, const int stereo) { // 3D -> 2D
 	float3 t, r;
-	t.x = p.x-(camera.free ? camera.pos.x : 0.0f)-(float)stereo*camera.eye_distance/camera.zoom*camera.R.xx; // transformation
-	t.y = p.y-(camera.free ? camera.pos.y : 0.0f)-(float)stereo*camera.eye_distance/camera.zoom*camera.R.xy;
-	t.z = p.z-(camera.free ? camera.pos.z : 0.0f);
-	r.z = camera.R.zx*t.x+camera.R.zy*t.y+camera.R.zz*t.z; // z-position for z-buffer
-	const float rs = camera.zoom*camera.dis/(camera.dis-r.z*camera.zoom); // perspective (reciprocal is more efficient)
+	t.x = p.x-(fx3d::GraphicsSettings::GetCamera().free ? fx3d::GraphicsSettings::GetCamera().pos.x : 0.0f)-(float)stereo*fx3d::GraphicsSettings::GetCamera().eye_distance/fx3d::GraphicsSettings::GetCamera().zoom*fx3d::GraphicsSettings::GetCamera().R.xx; // transformation
+	t.y = p.y-(fx3d::GraphicsSettings::GetCamera().free ? fx3d::GraphicsSettings::GetCamera().pos.y : 0.0f)-(float)stereo*fx3d::GraphicsSettings::GetCamera().eye_distance/fx3d::GraphicsSettings::GetCamera().zoom*fx3d::GraphicsSettings::GetCamera().R.xy;
+	t.z = p.z-(fx3d::GraphicsSettings::GetCamera().free ? fx3d::GraphicsSettings::GetCamera().pos.z : 0.0f);
+	r.z = fx3d::GraphicsSettings::GetCamera().R.zx*t.x+fx3d::GraphicsSettings::GetCamera().R.zy*t.y+fx3d::GraphicsSettings::GetCamera().R.zz*t.z; // z-position for z-buffer
+	const float rs = fx3d::GraphicsSettings::GetCamera().zoom*fx3d::GraphicsSettings::GetCamera().dis/(fx3d::GraphicsSettings::GetCamera().dis-r.z*fx3d::GraphicsSettings::GetCamera().zoom); // perspective (reciprocal is more efficient)
 	if(rs<=0.0f) return false; // point is behins camera
-	const float tv = camera.tv&&stereo!=0 ? 0.5f : 1.0f;
-	r.x = ((camera.R.xx*t.x+camera.R.xy*t.y+camera.R.xz*t.z)*rs+(float)stereo*camera.eye_distance)*tv+(0.5f+(float)stereo*0.25f)*(float)camera.width; // x position on screen
-	r.y =  (camera.R.yx*t.x+camera.R.yy*t.y+camera.R.yz*t.z)*rs+0.5f*(float)camera.height; // y position on screen
+	const float tv = fx3d::GraphicsSettings::GetCamera().tv&&stereo!=0 ? 0.5f : 1.0f;
+	r.x = ((fx3d::GraphicsSettings::GetCamera().R.xx*t.x+fx3d::GraphicsSettings::GetCamera().R.xy*t.y+fx3d::GraphicsSettings::GetCamera().R.xz*t.z)*rs+(float)stereo*fx3d::GraphicsSettings::GetCamera().eye_distance)*tv+(0.5f+(float)stereo*0.25f)*(float)fx3d::GraphicsSettings::GetCamera().width; // x position on screen
+	r.y =  (fx3d::GraphicsSettings::GetCamera().R.yx*t.x+fx3d::GraphicsSettings::GetCamera().R.yy*t.y+fx3d::GraphicsSettings::GetCamera().R.yz*t.z)*rs+0.5f*(float)fx3d::GraphicsSettings::GetCamera().height; // y position on screen
 	rx = (int)(r.x+0.5f);
 	ry = (int)(r.y+0.5f);
 	rz = r.z;
 	return true;
 }
 bool is_off_screen(const int x, const int y) { // check if point is off screen
-	return x<0||x>=(int)camera.width  ||y<0||y>=(int)camera.height; // entire screen
+	return x<0||x>=(int)fx3d::GraphicsSettings::GetCamera().width  ||y<0||y>=(int)fx3d::GraphicsSettings::GetCamera().height; // entire screen
 }
 bool is_off_screen(const int x, const int y, const int stereo) { // check if point is off screen
 	switch(stereo) {
-		default: return x<                  0||x>=(int)camera.width  ||y<0||y>=(int)camera.height; // entire screen
-		case -1: return x<                  0||x>=(int)camera.width/2||y<0||y>=(int)camera.height; // left half
-		case +1: return x<(int)camera.width/2||x>=(int)camera.width  ||y<0||y>=(int)camera.height; // right half
+		default: return x<                  0||x>=(int)fx3d::GraphicsSettings::GetCamera().width  ||y<0||y>=(int)fx3d::GraphicsSettings::GetCamera().height; // entire screen
+		case -1: return x<                  0||x>=(int)fx3d::GraphicsSettings::GetCamera().width/2||y<0||y>=(int)fx3d::GraphicsSettings::GetCamera().height; // left half
+		case +1: return x<(int)fx3d::GraphicsSettings::GetCamera().width/2||x>=(int)fx3d::GraphicsSettings::GetCamera().width  ||y<0||y>=(int)fx3d::GraphicsSettings::GetCamera().height; // right half
 	}
 }
 bool intersect_lines(const int x0, const int y0, const int x1, const int y1, const int xA, const int yA, const int xB, const int yB) { // check if two lines intersect
@@ -53,9 +51,9 @@ bool intersect_line_rectangle(const int x0, const int y0, const int x1, const in
 }
 bool intersects_screen(const int x0, const int y0, const int x1, const int y1, const int stereo) {
 	switch(stereo) {
-		case  0: return intersect_line_rectangle(x0, y0, x1, y1,              0, 0, camera.width  , camera.height);
-		case -1: return intersect_line_rectangle(x0, y0, x1, y1,              0, 0, camera.width/2, camera.height);
-		case +1: return intersect_line_rectangle(x0, y0, x1, y1, camera.width/2, 0, camera.width  , camera.height);
+		case  0: return intersect_line_rectangle(x0, y0, x1, y1,              0, 0, fx3d::GraphicsSettings::GetCamera().width  , fx3d::GraphicsSettings::GetCamera().height);
+		case -1: return intersect_line_rectangle(x0, y0, x1, y1,              0, 0, fx3d::GraphicsSettings::GetCamera().width/2, fx3d::GraphicsSettings::GetCamera().height);
+		case +1: return intersect_line_rectangle(x0, y0, x1, y1, fx3d::GraphicsSettings::GetCamera().width/2, 0, fx3d::GraphicsSettings::GetCamera().width  , fx3d::GraphicsSettings::GetCamera().height);
 	}
 	return false;
 }
@@ -119,10 +117,10 @@ ulong get_font_pixels(const int character) {
 	return pixels[clamp(character+256*(character<0)-32, 0, 223)];
 }
 void draw(const int x, const int y, const float z, const int color, const int stereo) {
-	const int index=x+y*(int)camera.width, iz=(int)(z*(2147483647.0f/10000.0f));
-	if(!is_off_screen(x, y, stereo)&&iz>camera.zbuffer[index]) {
-		camera.zbuffer[index] = iz;
-		camera.bitmap[index] = color; // only draw if point is on screen and first in zbuffer
+	const int index=x+y*(int)fx3d::GraphicsSettings::GetCamera().width, iz=(int)(z*(2147483647.0f/10000.0f));
+	if(!is_off_screen(x, y, stereo)&&iz>fx3d::GraphicsSettings::GetCamera().zbuffer[index]) {
+		fx3d::GraphicsSettings::GetCamera().zbuffer[index] = iz;
+		fx3d::GraphicsSettings::GetCamera().bitmap[index] = color; // only draw if point is on screen and first in zbuffer
 	}
 }
 void convert_pixel(const float3& p, const int color, const int stereo) {
@@ -134,12 +132,12 @@ void convert_pixel(const float3& p, const int color, const int stereo) {
 void convert_circle(const float3& p, const float r, const int color, const int stereo) {
 	int rx, ry; float rz;
 	if(convert(rx, ry, rz, p, stereo)) {
-		const float rs = camera.zoom*camera.dis/(camera.dis-rz*camera.zoom);
+		const float rs = fx3d::GraphicsSettings::GetCamera().zoom*fx3d::GraphicsSettings::GetCamera().dis/(fx3d::GraphicsSettings::GetCamera().dis-rz*fx3d::GraphicsSettings::GetCamera().zoom);
 		const int radius = (int)(rs*r+0.5f);
 		switch(stereo) {
-			default: if(rx<                   -radius||rx>=(int)camera.width  +radius || ry<-radius||ry>=(int)camera.height+radius) return; break; // cancel drawing if circle is off screen
-			case -1: if(rx<                   -radius||rx>=(int)camera.width/2+radius || ry<-radius||ry>=(int)camera.height+radius) return; break;
-			case +1: if(rx<(int)camera.width/2-radius||rx>=(int)camera.width  +radius || ry<-radius||ry>=(int)camera.height+radius) return; break;
+			default: if(rx<                   -radius||rx>=(int)fx3d::GraphicsSettings::GetCamera().width  +radius || ry<-radius||ry>=(int)fx3d::GraphicsSettings::GetCamera().height+radius) return; break; // cancel drawing if circle is off screen
+			case -1: if(rx<                   -radius||rx>=(int)fx3d::GraphicsSettings::GetCamera().width/2+radius || ry<-radius||ry>=(int)fx3d::GraphicsSettings::GetCamera().height+radius) return; break;
+			case +1: if(rx<(int)fx3d::GraphicsSettings::GetCamera().width/2-radius||rx>=(int)fx3d::GraphicsSettings::GetCamera().width  +radius || ry<-radius||ry>=(int)fx3d::GraphicsSettings::GetCamera().height+radius) return; break;
 		}
 		int d=-radius, x=radius, y=0; // Bresenham algorithm for circle
 		while(x>=y) {
@@ -238,7 +236,7 @@ void convert_triangle_interpolated(const float3& p0, const float3& p1, const flo
 void convert_text(const float3& p, const string& s, const float r, const int color, const int stereo) {
 	int rx, ry; float rz;
 	if(convert(rx, ry, rz, p, stereo)) {
-		const float rs = camera.zoom*camera.dis/(camera.dis-rz*camera.zoom);
+		const float rs = fx3d::GraphicsSettings::GetCamera().zoom*fx3d::GraphicsSettings::GetCamera().dis/(fx3d::GraphicsSettings::GetCamera().dis-rz*fx3d::GraphicsSettings::GetCamera().zoom);
 		const int radius = (int)(rs*r+0.5f);
 		const float tr = fmax(0.85f*radius, 2.0f);
 		rx += 4+(int)tr;
@@ -254,7 +252,7 @@ void convert_text(const float3& p, const string& s, const float r, const int col
 }
 
 void draw_pixel(const int x, const int y, const int color) {
-	if(!is_off_screen(x, y)) camera.bitmap[x+y*(int)camera.width] = color; // only draw if point is on screen
+	if(!is_off_screen(x, y)) fx3d::GraphicsSettings::GetCamera().bitmap[x+y*(int)fx3d::GraphicsSettings::GetCamera().width] = color; // only draw if point is on screen
 }
 void draw_circle(const int x, const int y, const int r, const int color) {
 	int d=-r, dx=r, dy=0; // Bresenham algorithm for circle
@@ -323,21 +321,21 @@ void draw_text(const int x, const int y, const string& s, const int color) {
 }
 void draw_label(const int x, const int y, const string& s, const int color) {
 	draw_text(x, y, s, color);
-	if(camera.vr) {
-		if(x-camera.width/2>0) {
-			draw_text(x-(int)camera.width/2, y, s, color);
+	if(fx3d::GraphicsSettings::GetCamera().vr) {
+		if(x-fx3d::GraphicsSettings::GetCamera().width/2>0) {
+			draw_text(x-(int)fx3d::GraphicsSettings::GetCamera().width/2, y, s, color);
 		}
-		if(x+(int)camera.width/2<(int)camera.width) {
-			draw_text(x+(int)camera.width/2, y, s, color);
+		if(x+(int)fx3d::GraphicsSettings::GetCamera().width/2<(int)fx3d::GraphicsSettings::GetCamera().width) {
+			draw_text(x+(int)fx3d::GraphicsSettings::GetCamera().width/2, y, s, color);
 		}
 	}
 }
 void draw_bitmap(const int* bitmap) {
-	std::copy(bitmap, bitmap+(int)camera.width*(int)camera.height, camera.bitmap);
+	std::copy(bitmap, bitmap+(int)fx3d::GraphicsSettings::GetCamera().width*(int)fx3d::GraphicsSettings::GetCamera().height, fx3d::GraphicsSettings::GetCamera().bitmap);
 }
 
 void draw_pixel(const float3& p, const int color) {
-	if(!camera.vr) {
+	if(!fx3d::GraphicsSettings::GetCamera().vr) {
 		convert_pixel(p, color,  0);
 	} else {
 		convert_pixel(p, color, -1);
@@ -345,7 +343,7 @@ void draw_pixel(const float3& p, const int color) {
 	}
 }
 void draw_circle(const float3& p, const float r, const int color) {
-	if(!camera.vr) {
+	if(!fx3d::GraphicsSettings::GetCamera().vr) {
 		convert_circle(p, r, color,  0);
 	} else {
 		convert_circle(p, r, color, -1);
@@ -353,7 +351,7 @@ void draw_circle(const float3& p, const float r, const int color) {
 	}
 }
 void draw_line(const float3& p0, const float3& p1, const int color) {
-	if(!camera.vr) {
+	if(!fx3d::GraphicsSettings::GetCamera().vr) {
 		convert_line(p0, p1, color,  0);
 	} else {
 		convert_line(p0, p1, color, -1);
@@ -362,7 +360,7 @@ void draw_line(const float3& p0, const float3& p1, const int color) {
 }
 void draw_triangle(const float3& p0, const float3& p1, const float3& p2, const int color, const bool translucent) { // points clockwise from above
 	const int cl = lighting(color, (p0+p1+p2)/3.0f, cross(p1-p0, p2-p0), translucent);
-	if(!camera.vr) {
+	if(!fx3d::GraphicsSettings::GetCamera().vr) {
 		convert_triangle(p0, p1, p2, cl,  0);
 	} else {
 		convert_triangle(p0, p1, p2, cl, -1);
@@ -374,7 +372,7 @@ void draw_triangle(const float3& p0, const float3& p1, const float3& p2, const i
 	const int cl0 = lighting(c0, p0, normal, translucent);
 	const int cl1 = lighting(c1, p1, normal, translucent);
 	const int cl2 = lighting(c2, p2, normal, translucent);
-	if(!camera.vr) {
+	if(!fx3d::GraphicsSettings::GetCamera().vr) {
 		convert_triangle_interpolated(p0, p1, p2, cl0, cl1, cl2,  0);
 	} else {
 		convert_triangle_interpolated(p0, p1, p2, cl0, cl1, cl2, -1);
@@ -382,7 +380,7 @@ void draw_triangle(const float3& p0, const float3& p1, const float3& p2, const i
 	}
 }
 void draw_text(const float3& p, const float r, const string& s, const int color) {
-	if(!camera.vr) {
+	if(!fx3d::GraphicsSettings::GetCamera().vr) {
 		convert_text(p, s, r, color,  0);
 	} else {
 		convert_text(p, s, r, color, -1);
@@ -391,7 +389,7 @@ void draw_text(const float3& p, const float r, const string& s, const int color)
 }
 
 void key_bindings(const int key) {
-	camera.key_update = true;
+	fx3d::GraphicsSettings::GetCamera().key_update = true;
 	switch(key) {
 		// reserved keys for graphics: W,A,S,D, I,J,K,L, R,U, V,B, C,VK_SPACE, Y,X, N,M
 		//case 'A': key_A = !key_A; break;
@@ -430,6 +428,6 @@ void key_bindings(const int key) {
 		case '8': key_8 = !key_8; break;
 		case '9': key_9 = !key_9; break;
 		case '0': key_0 = !key_0; break;
-		default: camera.input_key(key);
+		default: fx3d::GraphicsSettings::GetCamera().input_key(key);
 	}
 }

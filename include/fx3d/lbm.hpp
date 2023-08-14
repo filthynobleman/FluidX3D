@@ -513,7 +513,7 @@ public:
 		Graphics() {} // default constructor
 		Graphics(LBM* lbm) {
 			this->lbm = lbm;
-			camera.set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz()));
+			fx3d::GraphicsSettings::GetCamera().set_zoom(0.5f*(float)fmax(fmax(lbm->get_Nx(), lbm->get_Ny()), lbm->get_Nz()));
 			slice_x = (int)lbm->get_Nx()/2;
 			slice_y = (int)lbm->get_Ny()/2;
 			slice_z = (int)lbm->get_Nz()/2;
