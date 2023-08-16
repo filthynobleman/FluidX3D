@@ -1,6 +1,6 @@
 {
     "export": {
-        "out_dir": "..\\bin\\export\\test\\",
+        "out_dir": ".\\bin\\export\\test\\",
         "fps": 30,
         "simulation_steps": 900,
         "update_dt": 10,

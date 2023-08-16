@@ -2370,7 +2370,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	const uint n = get_global_id(0);
 	if(n>=(uint)def_N||is_halo(n)) return; // don't execute graphics_flags() on halo
 	const uint3 xyz = coordinates(n);
-	if(xyz.x>=def_Nx-1u||xyz.y>=def_Ny-1u||xyz.z>=def_Nz-1u) return;
+	if(xyz.x>=def_Nx-2u||xyz.y>=def_Ny-2u||xyz.z>=def_Nz-2u||xyz.x==0u||xyz.y==0u||xyz.z==0u) return;
 	//if(xyz.x==0u||xyz.y==0u||xyz.z==0u||xyz.x>=def_Nx-2u||xyz.y>=def_Ny-2u||xyz.z>=def_Nz-2u) return;
 	uint j[8];
 	const uint x0 =  xyz.x; // cube stencil

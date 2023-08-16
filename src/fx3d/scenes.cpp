@@ -85,7 +85,7 @@ fx3d::LBM* fx3d::CollidingDropletsInit(const nlohmann::json& json)
 
 
 bool fx3d::Scene::is_boundary(uint x, uint y, uint z) const {
-	return x==0u || /*x==lbm->get_Nx()-1u ||*/ y==0u || y==lbm->get_Ny()-1u || z==0u || z==lbm->get_Nz()-1u;
+	return x==0u || x==lbm->get_Nx()-1u || y==0u || y==lbm->get_Ny()-1u || z==0u || z==lbm->get_Nz()-1u;
 }
 
 bool fx3d::Scene::is_fluid(uint x, uint y, uint z) const {
@@ -253,7 +253,7 @@ void fx3d::Scene::config_export(const nlohmann::json &config) {
 }
 
 void fx3d::Scene::config_graphics(const nlohmann::json &config) {
-	lbm->graphics.visualization_modes = VIS_PHI_RASTERIZE|VIS_FLAG_SURFACE;
+	lbm->graphics.visualization_modes = VIS_PHI_RAYTRACE|VIS_FLAG_SURFACE;
 	// lbm->graphics.set_camera_centered(0.0f, -0.5f);
 }
 
