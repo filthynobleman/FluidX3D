@@ -59,6 +59,8 @@ protected:
     virtual void config_graphics(const nlohmann::json &config);
     virtual void custom_grid_initialization();
 
+    virtual void postprocess();
+
 public:
 
     void make_fluid(const Mesh* geometry);

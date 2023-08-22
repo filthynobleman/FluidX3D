@@ -121,6 +121,11 @@ void fx3d::Scene::run() {
 			export_frame();
 		}
 	}
+	postprocess();
+}
+
+void fx3d::Scene::postprocess() {
+	return;
 }
 
 void fx3d::Scene::step() {
