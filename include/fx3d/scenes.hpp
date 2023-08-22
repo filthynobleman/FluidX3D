@@ -49,6 +49,8 @@ private:
 protected:
 
     LBM* lbm;
+
+    const std::string get_out_dir();
     
     Mesh* load_mesh_stl(const string& stl_path, const float3& center, const float3x3& rotation, const float3& scale, const float size) const;
 

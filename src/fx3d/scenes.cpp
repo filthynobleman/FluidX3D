@@ -132,6 +132,10 @@ void fx3d::Scene::step() {
 	this->lbm->run(1u);
 }
 
+const std::string fx3d::Scene::get_out_dir() {
+	return out_dir;
+}
+
 void fx3d::Scene::export_frame() {
 	render_current_frame(out_dir, "frame");
 }
