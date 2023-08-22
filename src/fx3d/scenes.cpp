@@ -151,6 +151,15 @@ bool fx3d::Scene::is_current_frame_output(const ulong sim_steps, const float out
 
 void fx3d::Scene::configure(const nlohmann::json &config) {
 
+	/* Graphics config and initialize */
+
+	config_graphics(config);
+	lbm->run(0u);
+
+	/* Export configuration */
+
+	config_export(config);
+	
 	/* Simulation parameters + create LBM */
 
 	config_sim_params(config);
@@ -165,15 +174,6 @@ void fx3d::Scene::configure(const nlohmann::json &config) {
 	/* Ad-hoc grid definition */
 
 	custom_grid_initialization();
-
-	/* Graphics config and initialize */
-
-	config_graphics(config);
-	lbm->run(0u);
-
-	/* Export configuration */
-
-	config_export(config);
 
 }
 
