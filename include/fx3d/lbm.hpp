@@ -292,7 +292,7 @@ public:
 					data[i*(ulong)dimensions()+(ulong)d] = reverse_bytes(reference(i, d)); // SoA <- AoS
 				}
 			}
-			int nn = get_N();
+			int nn = lbm->get_N();
 			int* idxs = (int*)std::malloc(nn * sizeof(int));
 			float* vals = float_alloc(nn);
 			int nnz = 0;
