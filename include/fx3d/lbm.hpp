@@ -285,6 +285,20 @@ public:
 			print_info("File \""+filename+"\" saved.");
 			info.allow_rendering = true;
 		}
+		inline void write_sparse_array(const string& path) {
+			T* data = new T[range()];
+			for(uint d=0u; d<dimensions(); d++) {
+				for(ulong i=0ull; i<length(); i++) {
+					data[i*(ulong)dimensions()+(ulong)d] = reverse_bytes(reference(i, d)); // SoA <- AoS
+				}
+			}
+			int nn = get_N();
+			int* idxs = (int*)std::malloc(nn * sizeof(int));
+			float* vals = float_alloc(nn);
+			int nnz = 0;
+			compress_array(data, nn, idxs, vals, nnz);
+    		write_coo_tensor(path, idxs, vals, nnz);
+		}
 
 	public:
 		class Pointer {
@@ -359,6 +373,13 @@ public:
 		inline void write_device_to_vtk(const string& path="") { // write binary .vtk file
 			read_from_device();
 			write_host_to_vtk(path);
+		}
+		inline void write_host_to_sparse(const string& path="") {
+			write_sparse_array(default_filename(path, name, ".dat", lbm->get_t()));
+		}
+		inline void write_device_to_sparse(const string& path="") {
+			read_from_device();
+			write_host_to_sparse(path);
 		}
 	};
 

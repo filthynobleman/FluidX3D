@@ -6,6 +6,7 @@
 #define UTILITIES_CONSOLE_COLOR
 #define UTILITIES_CONSOLE_INPUT
 #define UTILITIES_CONSOLE_DITHER_LOOKUP
+#define UTILITIES_SPARSE_COO_TENSOR
 #define CONSOLE_WIDTH 79
 //#define UTILITIES_NO_CPP17
 
@@ -4193,6 +4194,11 @@ inline void write_png(const string& filename, const Image* image) {
 	delete[] data;
 }
 #endif // UTILITIES_PNG
+
+#ifdef UTILITIES_SPARSE_COO_TENSOR
+#include <utils/coo_tensor_float.hpp>
+#endif // UTILITIES_SPARSE_COO_TENSOR
+
 
 struct Mesh { // triangle mesh
 	uint triangle_number = 0u;
