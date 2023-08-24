@@ -924,7 +924,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float3 normal;
 	float d = ray_seek_solid(ray_in, flags, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
 	if(d==-1.0f) return false; // no intersection found
-	*reflectivity = max(dot(ray_in.direction, normal), 0.0f);  // Lambertian material
+	*reflectivity = fabs(dot(ray_in.direction, normal));  // Lambertian material. Is it right to use the abs? Who knows at this point
 	return true;
 }
 )+R(bool is_above_plane(const float3 point, const float3 plane_p, const float3 plane_n) {
@@ -2804,6 +2804,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 		}
 		transmission_color = color_mix(transmission_color, def_absorption_color, transmissivity);
 		pixelcolor = color_mix(reflection_color, transmission_color, reflectivity); // 1 ray pass
+		
 		//pixelcolor = raytrace_phi_next_ray(reflection, transmission, reflectivity, transmissivity, phi, flags, skybox); // 2 ray passes
 	} else if (raytrace_solid(camray, &reflectivity, flags, def_Nx, def_Ny, def_Nz)) {
 		pixelcolor = color_dim(0xDFDFDF, reflectivity);

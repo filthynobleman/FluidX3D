@@ -2,9 +2,9 @@
     "export": {
         "out_dir": ".\\bin\\export\\test\\",
         "fps": 30,
-        "simulation_steps": 30,
+        "simulation_steps": 90,
         "update_dt": 30,
-        "video_seconds": 1000
+        "video_seconds": 3
     },
     "sim_params": {
         "Nx": 256,
