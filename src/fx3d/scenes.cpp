@@ -262,7 +262,7 @@ void fx3d::Scene::config_export(const nlohmann::json &config) {
 }
 
 void fx3d::Scene::config_graphics(const nlohmann::json &config) {
-	lbm->graphics.visualization_modes = VIS_PHI_RAYTRACE|VIS_FLAG_SURFACE;
+	lbm->graphics.visualization_modes = VIS_PHI_RAYTRACE; //|VIS_FLAG_SURFACE;
 	// lbm->graphics.set_camera_centered(0.0f, -0.5f);
 }
 

@@ -578,6 +578,37 @@ string opencl_c_container() { return R( // ########################## begin of O
 	intersect = fmax(intersect, intersect_rhombus(r, p[3], p[2], p[7])); // 00-
 	return intersect;
 }
+)+R(float intersect_cuboid_with_normal(const ray r, const float3 center, const float Lx, const float Ly, const float Lz, float3* normal) {
+	const float3 bmin = center-0.5f*(float3)(Lx, Ly, Lz);
+	const float3 bmax = center+0.5f*(float3)(Lx, Ly, Lz);
+	if(r.origin.x>=bmin.x&&r.origin.y>=bmin.y&&r.origin.z>=bmin.z&&r.origin.x<=bmax.x&&r.origin.y<=bmax.y&&r.origin.z<=bmax.z) return 0.0f; // ray origin is within cuboid
+	float3 p[8]; // 8 cuboid vertices
+	p[0] = (float3)(bmin.x, bmin.y, bmin.z); // ---
+	p[1] = (float3)(bmax.x, bmin.y, bmin.z); // +--
+	p[2] = (float3)(bmax.x, bmin.y, bmax.z); // +-+
+	p[3] = (float3)(bmin.x, bmin.y, bmax.z); // --+
+	p[4] = (float3)(bmin.x, bmax.y, bmin.z); // -+-
+	p[5] = (float3)(bmax.x, bmax.y, bmin.z); // ++-
+	p[6] = (float3)(bmax.x, bmax.y, bmax.z); // +++
+	p[7] = (float3)(bmin.x, bmax.y, bmax.z); // -++
+	float intersect = -1.0f; // test for intersections with the 6 cuboid faces, ray will intersect with either 0 or 1 rhombuses
+	float rhombus_intersect[6];
+	rhombus_intersect[0] = intersect_rhombus(r, p[0], p[3], p[4]); // +00 (normal vectors)
+	rhombus_intersect[1] = intersect_rhombus(r, p[2], p[1], p[6]); // -00
+	rhombus_intersect[2] = intersect_rhombus(r, p[1], p[2], p[0]); // 0+0
+	rhombus_intersect[3] = intersect_rhombus(r, p[7], p[6], p[4]); // 0-0
+	rhombus_intersect[4] = intersect_rhombus(r, p[1], p[0], p[5]); // 00+
+	rhombus_intersect[5] = intersect_rhombus(r, p[3], p[2], p[7]); // 00-
+	uint side = 0u; // test for intersections with the 6 cuboid faces
+	for(uint i=0u; i<6u; i++) {
+		if(rhombus_intersect[i]>intersect) { // test for intersections with the 6 cuboid faces
+			intersect = rhombus_intersect[i]; // ray will intersect with either 0 or 1 rhombuses
+			side = i;
+		}
+	}
+	*normal = (float3)(side==0u ? 1.0f : side==1u ? -1.0f : 0.0f, side==2u ? 1.0f : side==3u ? -1.0f : 0.0f, side==4u ? 1.0f : side==5u ? -1.0f : 0.0f);
+	return intersect;
+}
 )+R(float intersect_cuboid_inside_with_normal(const ray r, const float3 center, const float Lx, const float Ly, const float Lz, float3* normal) {
 	const float3 bmin = center-0.5f*(float3)(Lx, Ly, Lz);
 	const float3 bmax = center+0.5f*(float3)(Lx, Ly, Lz);
@@ -831,13 +862,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	*transmissivity = d!=-1.0f ? exp(def_attenuation*((float)is_inside*d_internal+d)) : (float)(def_attenuation==0.0f); // Beer-Lambert law
 	return true;
 }
-)+R(bool raytrace_solid(const ray ray_in, const float* reflectivity, const global uchar* flags, const uint Nx, const uint Ny, const uint Nz) {
-	float3 normal;
-	float d = ray_seek_solid(ray_in, flags, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
-	if(d==-1.0f) return false; // no intersection found
-	reflectivity = dot(ray_in.direction, normal);  // Lambertian material
-	return true;
-}
 )+R(float ray_seek_solid(const ray r, const global uchar* flags, float3* normal, const uint Nx, const uint Ny, const uint Nz) {
 	const float3 pa = r.origin;
 	const float3 pb = r.origin+r.direction;
@@ -853,14 +877,15 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float tmy = tdy*(dy>0 ? 1.0f-fya : fya);
 	float tmz = tdz*(dz>0 ? 1.0f-fza : fza);
 	uchar flags_cell = 0u;
+	uchar last_flag = 0u;
 	while(true) {
 		if(tmx<tmy) {
 			if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; }
 		} else {
 			if(tmy<tmz) { xyz.y += dy; tmy += tdy; } else { xyz.z += dz; tmz += tdz; }
 		}
-		if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>=(int)Nx || xyz.y>=(int)Ny || xyz.z>=(int)Nz) break;
-		else if(xyz.x<0 || xyz.y<0 || xyz.z<0 || xyz.x>=(int)Nx-1 || xyz.y>=(int)Ny-1 || xyz.z>=(int)Nz-1) continue;
+		if(xyz.x<-1 || xyz.y<-1 || xyz.z<-1 || xyz.x>(int)Nx-1 || xyz.y>(int)Ny-1 || xyz.z>(int)Nz-1) break;
+		else if(xyz.x<=1 || xyz.y<=1 || xyz.z<=1 || xyz.x>=(int)Nx-2 || xyz.y>=(int)Ny-2 || xyz.z>=(int)Nz-2) continue;
 		const uint x0 =  (uint)xyz.x; // cube stencil
 		const uint xp =  (uint)xyz.x+1u;
 		const uint y0 =  (uint)xyz.y    *Nx;
@@ -876,53 +901,31 @@ string opencl_c_container() { return R( // ########################## begin of O
 		j[5] = xp+yp+z0; // ++0
 		j[6] = xp+yp+zp; // +++
 		j[7] = x0+yp+zp; // 0++
-		flags_cell = 0u; // check with cheap flags if the isosurface goes through the current marching-cubes cell (~15% performance boost)
-		for(uint i=0u; i<8u; i++) flags_cell |= flags[j[i]];
-		if(!(flags_cell&(TYPE_S|TYPE_E|TYPE_I))) continue; // cell is entirely inside/outside of the isosurface
 		float v[8];
-		for(uint i=0u; i<8u; i++) v[i] = flags[j[i]]&TYPE_S ? 1.0f : 0.0f;
+		for(uint i=0u; i<8u; i++) v[i] = (float)((flags[j[i]]&TYPE_BO)==TYPE_S);
 		float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
 		const uint tn = marching_cubes(v, 0.5f, triangles); // run marching cubes algorithm
-		if(tn==0u) continue; // if returned tn value is non-zero, iterate through triangles
+		if (tn==0u) continue;
 		const float3 offset = (float3)((float)xyz.x+0.5f-0.5f*(float)Nx, (float)xyz.y+0.5f-0.5f*(float)Ny, (float)xyz.z+0.5f-0.5f*(float)Nz);
 		for(uint i=0u; i<tn; i++) {
 			const float3 p0 = triangles[3u*i   ]+offset;
 			const float3 p1 = triangles[3u*i+1u]+offset;
 			const float3 p2 = triangles[3u*i+2u]+offset;
-			const float intersect = intersect_triangle_bidirectional(r, p0, p1, p2); // for each triangle, check ray-triangle intersection
-			if(intersect>0.0f) { // intersection found (there can only be exactly 1 intersection)
-				const uint xq =  ((uint)xyz.x   +2u)%Nx; // central difference stencil on each cube corner point
-				const uint xm =  ((uint)xyz.x+Nx-1u)%Nx;
-				const uint yq = (((uint)xyz.y   +2u)%Ny)*Nx;
-				const uint ym = (((uint)xyz.y+Ny-1u)%Ny)*Nx;
-				const uint zq = (((uint)xyz.z   +2u)%Nz)*Ny*Nx;
-				const uint zm = (((uint)xyz.z+Nz-1u)%Nz)*Ny*Nx;
-				float3 n[8];
-				n[0] = (float3)(phi[xm+y0+z0]-v[1], phi[x0+ym+z0]-v[4], phi[x0+y0+zm]-v[3]); // central difference stencil on each cube corner point
-				n[1] = (float3)(v[0]-phi[xq+y0+z0], phi[xp+ym+z0]-v[5], phi[xp+y0+zm]-v[2]); // compute normal vectors from gradient
-				n[2] = (float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq]); // normalize later during trilinear interpolation more efficiently
-				n[3] = (float3)(phi[xm+y0+zp]-v[2], phi[x0+ym+zp]-v[7], v[0]-phi[x0+y0+zq]);
-				n[4] = (float3)(phi[xm+yp+z0]-v[5], v[0]-phi[x0+yq+z0], phi[x0+yp+zm]-v[7]);
-				n[5] = (float3)(v[4]-phi[xq+yp+z0], v[1]-phi[xp+yq+z0], phi[xp+yp+zm]-v[6]);
-				n[6] = (float3)(v[7]-phi[xq+yp+zp], v[2]-phi[xp+yq+zp], v[5]-phi[xp+yp+zq]);
-				n[7] = (float3)(phi[xm+yp+zp]-v[6], v[3]-phi[x0+yq+zp], v[4]-phi[x0+yp+zq]);
-				const float3 p = r.origin+intersect*r.direction-offset; // intersection point minus offset
-				const float x1=p.x-floor(p.x), y1=p.y-floor(p.y), z1=p.z-floor(p.z), x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-				*normal = normalize(
-					(x0*y0*z0*rsqrt(fma(n[0].x, n[0].x, fma(n[0].y, n[0].y, fma(n[0].z, n[0].z, 1E-9f)))))*n[0]+
-					(x1*y0*z0*rsqrt(fma(n[1].x, n[1].x, fma(n[1].y, n[1].y, fma(n[1].z, n[1].z, 1E-9f)))))*n[1]+
-					(x1*y0*z1*rsqrt(fma(n[2].x, n[2].x, fma(n[2].y, n[2].y, fma(n[2].z, n[2].z, 1E-9f)))))*n[2]+
-					(x0*y0*z1*rsqrt(fma(n[3].x, n[3].x, fma(n[3].y, n[3].y, fma(n[3].z, n[3].z, 1E-9f)))))*n[3]+
-					(x0*y1*z0*rsqrt(fma(n[4].x, n[4].x, fma(n[4].y, n[4].y, fma(n[4].z, n[4].z, 1E-9f)))))*n[4]+
-					(x1*y1*z0*rsqrt(fma(n[5].x, n[5].x, fma(n[5].y, n[5].y, fma(n[5].z, n[5].z, 1E-9f)))))*n[5]+
-					(x1*y1*z1*rsqrt(fma(n[6].x, n[6].x, fma(n[6].y, n[6].y, fma(n[6].z, n[6].z, 1E-9f)))))*n[6]+
-					(x0*y1*z1*rsqrt(fma(n[7].x, n[7].x, fma(n[7].y, n[7].y, fma(n[7].z, n[7].z, 1E-9f)))))*n[7]
-				); // perform normalization and trilinear interpolation
-				return intersect; // intersection found, exit loop, process transmission ray
-			}
+			const float intersect = intersect_triangle_bidirectional(r, p0, p1, p2);
+			if (intersect > 0.0f) {
+				*normal = normalize(cross(p1-p0, p2-p0));
+				return intersect;
+			}	
 		}
 	}
 	return -1.0f;
+}
+)+R(bool raytrace_solid(const ray ray_in, float* reflectivity, const global uchar* flags, const uint Nx, const uint Ny, const uint Nz) {
+	float3 normal;
+	float d = ray_seek_solid(ray_in, flags, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
+	if(d==-1.0f) return false; // no intersection found
+	*reflectivity = max(dot(ray_in.direction, normal), 0.0f);  // Lambertian material
+	return true;
 }
 )+R(bool is_above_plane(const float3 point, const float3 plane_p, const float3 plane_n) {
 	return dot(point-plane_p, plane_n)>=0.0f;
@@ -2785,15 +2788,15 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float reflectivity, transmissivity;
 	int pixelcolor = 0;
 	if(raytrace_phi(camray, &reflection, &transmission, &reflectivity, &transmissivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
-		float refl_reflectivity;
-		float transm_reflectivity;
-		int reflection_color;
-		int transmission_color;
+		float refl_reflectivity, transm_reflectivity;
+		int reflection_color, transmission_color;
+
 		if(raytrace_solid(reflection, &refl_reflectivity, flags, def_Nx, def_Ny, def_Nz)) {
 			reflection_color = color_dim(0xDFDFDF, refl_reflectivity);
 		} else {
 			reflection_color = skybox_color(reflection, skybox);
 		}
+
 		if(raytrace_solid(transmission, &transm_reflectivity, flags, def_Nx, def_Ny, def_Nz)) {
 			transmission_color = color_dim(0xDFDFDF, transm_reflectivity);
 		} else {
