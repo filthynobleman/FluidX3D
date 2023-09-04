@@ -33,6 +33,7 @@ int fx3d::GraphicsSettings::m_RTColor               = 0x005F7F;
 
 Camera* fx3d::GraphicsSettings::m_Cam               = new Camera();
 
+std::string fx3d::GraphicsSettings::m_SkyboxPath    = "";
 
 
 Camera& fx3d::GraphicsSettings::GetCamera() { return *m_Cam; }
@@ -141,4 +142,14 @@ void fx3d::GraphicsSettings::SetRaytracingBlue(char Blue)
 {
     m_RTColor = m_RTColor & 0xffffff00;
     m_RTColor = m_RTColor | ((int)Blue);
+}
+
+
+
+std::string fx3d::GraphicsSettings::GetSkyboxPath() {
+    return m_SkyboxPath;
+}
+
+void fx3d::GraphicsSettings::SetSkyboxPath(std::string& SkyboxPath) {
+    m_SkyboxPath = SkyboxPath;
 }

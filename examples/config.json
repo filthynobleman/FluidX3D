@@ -1,4 +1,7 @@
 {
+    "graphics": {
+        "skybox": ".\\test\\promenade.png"
+    },
     "export": {
         "out_dir": ".\\bin\\export\\test\\",
         "fps": 30,

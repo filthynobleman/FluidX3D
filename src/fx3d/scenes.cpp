@@ -155,6 +155,10 @@ void fx3d::Scene::configure(const nlohmann::json &config) {
 
 	config_export(config);
 	
+	/* Graphics settings configuration */
+
+	config_graphics(config);
+
 	/* Simulation parameters + create LBM */
 
 	config_sim_params(config);
@@ -170,9 +174,9 @@ void fx3d::Scene::configure(const nlohmann::json &config) {
 
 	custom_grid_initialization();
 
-	/* Graphics config and initialize */
+	/* Apply rendering mode and initialize */
 
-	config_graphics(config);
+	select_rendering_mode(config);
 	lbm->run(0u);
 
 }
@@ -262,10 +266,16 @@ void fx3d::Scene::config_export(const nlohmann::json &config) {
 }
 
 void fx3d::Scene::config_graphics(const nlohmann::json &config) {
+	if (config.contains("graphics")) {
+		std::string skybox_path = config["graphics"]["skybox"];
+		fx3d::GraphicsSettings::SetSkyboxPath(skybox_path);
+	}
+}
+
+void fx3d::Scene::select_rendering_mode(const nlohmann::json &config) {
 	lbm->graphics.visualization_modes = VIS_PHI_RAYTRACE; //|VIS_FLAG_SURFACE;
 	// lbm->graphics.set_camera_centered(0.0f, -0.5f);
 }
-
 
 
 

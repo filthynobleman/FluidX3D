@@ -53,9 +53,3 @@ add_executable(FluidX3D "${PROJECT_SOURCE_DIR}/src/fluidx.cpp"
 target_link_libraries(FluidX3D FX3D OpenCL::OpenCL)
 set_property(TARGET FluidX3D PROPERTY CXX_STANDARD 17) 
 
-# Copy the skybox to the exe directory
-add_custom_command(
-        TARGET FluidX3D POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/skybox/skybox8k.png
-                ${CMAKE_SOURCE_DIR}/bin/skybox/skybox8k.png)

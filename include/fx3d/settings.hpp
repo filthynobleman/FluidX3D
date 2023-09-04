@@ -11,6 +11,9 @@
  */
 #pragma once
 
+#include <utils/utilities.hpp>
+
+
 class Camera;
 
 namespace fx3d
@@ -129,6 +132,7 @@ private:
     static int m_SLineLength;
     static float m_RTTrans;
     static int m_RTColor;
+    static std::string m_SkyboxPath;
 
     static Camera* m_Cam;
 
@@ -160,6 +164,8 @@ public:
     static int GetRaytracingGreen();
     static int GetRaytracingBlue();
 
+    static std::string GetSkyboxPath();
+
     static Camera& GetCamera();
 
 
@@ -188,6 +194,8 @@ public:
     static void SetRaytracingRed(char Red);
     static void SetRaytracingGreen(char Green);
     static void SetRaytracingBlue(char Blue);
+
+    static void SetSkyboxPath(std::string& SkyboxPath);
 };
 
 

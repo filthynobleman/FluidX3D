@@ -157,7 +157,7 @@ public:
 		Kernel kernel_graphics_q; // render vorticity (Q-criterion)
 
 // #ifdef SURFACE
-		const string path_skybox = get_exe_path()+"/skybox/skybox8k.png";
+		string path_skybox = fx3d::GraphicsSettings::GetSkyboxPath();  // get_exe_path()+"/skybox/skybox8k.png";
 		Image* skybox_image = nullptr;
 		Memory<int> skybox; // skybox for free surface raytracing
 		Kernel kernel_graphics_rasterize_phi; // rasterize free surface
@@ -177,12 +177,14 @@ public:
 		Graphics(LBM_Domain* lbm) {
 			this->lbm = lbm;
 // #ifdef SURFACE
+			path_skybox = fx3d::GraphicsSettings::GetSkyboxPath();
 			skybox_image = read_png(path_skybox);
 // #endif // SURFACE
 		}
 		Graphics& operator=(const Graphics& graphics) { // copy assignment
 			lbm = graphics.lbm;
 // #ifdef SURFACE
+			path_skybox = fx3d::GraphicsSettings::GetSkyboxPath();
 			skybox_image = graphics.get_skybox_image();
 // #endif // SURFACE
 			return *this;
