@@ -300,6 +300,7 @@ public:
 			int nnz = 0;
 			compress_array(data, nn, idxs, vals, nnz);
     		write_coo_tensor(path, idxs, vals, nnz);
+			delete[] data;
 		}
 
 	public:
