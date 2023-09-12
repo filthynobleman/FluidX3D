@@ -288,19 +288,19 @@ public:
 			info.allow_rendering = true;
 		}
 		inline void write_sparse_array(const string& path) {
-			T* data = new T[range()];
-			for(uint d=0u; d<dimensions(); d++) {
+			T* data = buffers[0]->data(); // new T[range()];
+			/*for(uint d=0u; d<dimensions(); d++) {
 				for(ulong i=0ull; i<length(); i++) {
 					data[i*(ulong)dimensions()+(ulong)d] = reverse_bytes(reference(i, d)); // SoA <- AoS
 				}
-			}
+			}*/
 			int nn = lbm->get_N();
 			int* idxs = (int*)std::malloc(nn * sizeof(int));
 			float* vals = float_alloc(nn);
 			int nnz = 0;
 			compress_array(data, nn, idxs, vals, nnz);
     		write_coo_tensor(path, lbm->get_Nx(), lbm->get_Ny(), lbm->get_Nz(), idxs, vals, nnz);
-			delete[] data;
+			//delete[] data;
 		}
 
 	public:
