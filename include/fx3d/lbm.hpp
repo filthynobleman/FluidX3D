@@ -299,7 +299,7 @@ public:
 			float* vals = float_alloc(nn);
 			int nnz = 0;
 			compress_array(data, nn, idxs, vals, nnz);
-    		write_coo_tensor(path, get_Nx(), get_Ny(), get_Nz(), idxs, vals, nnz);
+    		write_coo_tensor(path, lbm->get_Nx(), lbm->get_Ny(), lbm->get_Nz(), idxs, vals, nnz);
 			delete[] data;
 		}
 
