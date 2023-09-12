@@ -109,6 +109,7 @@ inline float* float_alloc(size_t num_x, size_t num_y, size_t num_z)
 
 
 inline bool write_coo_tensor(std::ofstream& outstream,
+                      const int nx, const int ny, const int nz,
                       const int* idxs,
                       const float* vals,
                       int nnz)
@@ -116,6 +117,9 @@ inline bool write_coo_tensor(std::ofstream& outstream,
     if (!outstream.is_open())
         return false;
 
+    outstream.write((const char*)&nx, sizeof(int));
+    outstream.write((const char*)&ny, sizeof(int));
+    outstream.write((const char*)&nz, sizeof(int));
     outstream.write((const char*)&nnz, sizeof(int));
     outstream.write((const char*)idxs, nnz * sizeof(int));
     outstream.write((const char*)vals, nnz * sizeof(float));
@@ -124,26 +128,28 @@ inline bool write_coo_tensor(std::ofstream& outstream,
 }
 
 inline bool write_coo_tensor(const std::string& filename,
+                      const int nx, const int ny, const int nz,
                       const int* idxs,
                       const float* vals,
                       int nnz)
 {
     std::ofstream outstream;
     outstream.open(filename, std::ios::binary);
-    bool res = write_coo_tensor(outstream, idxs, vals, nnz);
+    bool res = write_coo_tensor(outstream, nx, ny, nz, idxs, vals, nnz);
     outstream.close();
     return res;
 }
 
 inline bool write_coo_tensor(const std::string& dirname,
                       const std::string& filename,
+                      const int nx, const int ny, const int nz,
                       const int* idxs,
                       const float* vals,
                       int nnz)
 {
     std::filesystem::path dpath(dirname);
     std::filesystem::path fpath(filename);
-    return write_coo_tensor((dpath / fpath).string(), idxs, vals, nnz);
+    return write_coo_tensor((dpath / fpath).string(), nx, ny, nz, idxs, vals, nnz);
 }
 
 inline bool read_coo_tensor(std::ifstream& instream,
@@ -154,6 +160,8 @@ inline bool read_coo_tensor(std::ifstream& instream,
     if (!instream.is_open())
         return false;
 
+    int nxnynz[3];
+    instream.read((char*)nxnynz, 3 * sizeof(int));
     instream.read((char*)&nnz, sizeof(int));
 
     if (*vals == nullptr)
