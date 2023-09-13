@@ -1,6 +1,7 @@
 {
     "graphics": {
-        "skybox": ".\\test\\promenade.png"
+        "matte_fluid": false,
+        "skybox": ".\\assets\\hdri\\netball_court.png"
     },
     "export": {
         "out_dir": ".\\bin\\export\\test\\",
@@ -25,16 +26,16 @@
     },
     "obstacles": [
         {
-            "mesh_path": ".\\test\\ship.stl",
-            "center": [128.0, 128.0, 64.0],
-            "rotation": [0.0, 0.0, 90.0],
+            "mesh_path": ".\\assets\\stl\\tray.stl",
+            "center": [128.0, 128.0, 50.0],
+            "rotation": [90.0, 0.0, 0.0],
             "scale": [1.0, 1.0, 1.0],
-            "size": 86.0
+            "size": 128.0
         }
     ],
     "fluids": [
         {
-            "mesh_path": ".\\test\\ship.stl",
+            "mesh_path": ".\\assets\\stl\\duck.stl",
             "center": [128.0, 128.0, 128.0],
             "rotation": [90.0, 0.0, 0.0],
             "scale": [1.0, 1.0, 1.0],

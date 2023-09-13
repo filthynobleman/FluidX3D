@@ -401,6 +401,9 @@ string LBM_Domain::device_defines() const {
 		ss << "\n #define def_particles_rho " << to_string(particles_rho) << "f";
 	}
 
+	ss << "\n #define MAT_WATER " << to_string(MAT_WATER);
+	ss << "\n #define MAT_MATTE " << to_string(MAT_MATTE);
+
 	return ss.str();
 }
 
@@ -435,7 +438,7 @@ void LBM_Domain::Graphics::allocate(Device& device) {
 	{
 		skybox = Memory<int>(device, skybox_image->width()*skybox_image->height(), 1u, skybox_image->data());
 		kernel_graphics_rasterize_phi = Kernel(device, lbm->get_N(), "graphics_rasterize_phi", lbm->phi, camera_parameters, bitmap, zbuffer);
-		kernel_graphics_raytrace_phi = Kernel(device, bitmap.length(), "graphics_raytrace_phi", lbm->phi, lbm->flags, skybox, camera_parameters, bitmap);
+		kernel_graphics_raytrace_phi = Kernel(device, bitmap.length(), "graphics_raytrace_phi", lbm->phi, lbm->flags, fx3d::GraphicsSettings::GetFluidMaterial(), skybox, camera_parameters, bitmap);
 	}
 
 	if (Settings::IsFeatureEnabled(Feature::TEMPERATURE))

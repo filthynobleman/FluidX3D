@@ -31,6 +31,8 @@ int fx3d::GraphicsSettings::m_SLineLength           = 128;
 float fx3d::GraphicsSettings::m_RTTrans             = 0.25f;
 int fx3d::GraphicsSettings::m_RTColor               = 0x005F7F;
 
+int fx3d::GraphicsSettings::m_FluidMaterial         = -1;
+
 Camera* fx3d::GraphicsSettings::m_Cam               = new Camera();
 
 std::string fx3d::GraphicsSettings::m_SkyboxPath    = "";
@@ -126,6 +128,9 @@ int fx3d::GraphicsSettings::GetRaytracingBlue()
 {
     return m_RTColor & 0x000000ff;
 }
+int fx3d::GraphicsSettings::GetFluidMaterial() {
+    return m_FluidMaterial;
+}
 
 void fx3d::GraphicsSettings::SetRaytracingColor(int RTColor) { m_RTColor = RTColor; }
 void fx3d::GraphicsSettings::SetRaytracingRed(char Red)
@@ -142,6 +147,9 @@ void fx3d::GraphicsSettings::SetRaytracingBlue(char Blue)
 {
     m_RTColor = m_RTColor & 0xffffff00;
     m_RTColor = m_RTColor | ((int)Blue);
+}
+void fx3d::GraphicsSettings::SetFluidMaterial(int Mat) {
+    m_FluidMaterial = Mat;
 }
 
 

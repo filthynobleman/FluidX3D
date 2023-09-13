@@ -132,6 +132,7 @@ private:
     static int m_SLineLength;
     static float m_RTTrans;
     static int m_RTColor;
+    static int m_FluidMaterial;
     static std::string m_SkyboxPath;
 
     static Camera* m_Cam;
@@ -163,6 +164,7 @@ public:
     static int GetRaytracingRed();
     static int GetRaytracingGreen();
     static int GetRaytracingBlue();
+    static int GetFluidMaterial();
 
     static std::string GetSkyboxPath();
 
@@ -194,6 +196,7 @@ public:
     static void SetRaytracingRed(char Red);
     static void SetRaytracingGreen(char Green);
     static void SetRaytracingBlue(char Blue);
+    static void SetFluidMaterial(int Mat);
 
     static void SetSkyboxPath(std::string& SkyboxPath);
 };

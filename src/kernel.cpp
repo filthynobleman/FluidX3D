@@ -734,7 +734,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 )+R(int last_ray(const ray reflection, const ray transmission, const float reflectivity, const float transmissivity, const global int* skybox) {
 	return color_mix(skybox_color(reflection, skybox), color_mix(skybox_color(transmission, skybox), def_absorption_color, transmissivity), reflectivity);
 }
-)+R(float ray_grid_traverse(const ray r, const global float* phi, const global uchar* flags, float3* normal, const uint Nx, const uint Ny, const uint Nz) {
+)+R(float ray_grid_traverse(const ray r, const global float* phi, const global uchar* flags, int* hit_type, float3* normal, const uint Nx, const uint Ny, const uint Nz) {
 	const float3 pa = r.origin;
 	const float3 pb = r.origin+r.direction;
 	const float xa=pa.x-0.5f+0.5f*(float)Nx, ya=pa.y-0.5f+0.5f*(float)Ny, za=pa.z-0.5f+0.5f*(float)Nz; // start point
@@ -772,94 +772,129 @@ string opencl_c_container() { return R( // ########################## begin of O
 		j[5] = xp+yp+z0; // ++0
 		j[6] = xp+yp+zp; // +++
 		j[7] = x0+yp+zp; // 0++
-		flags_cell = 0u; // check with cheap flags if the isosurface goes through the current marching-cubes cell (~15% performance boost)
-		for(uint i=0u; i<8u; i++) flags_cell |= flags[j[i]];
-		if(!(flags_cell&(TYPE_S|TYPE_E|TYPE_I))) continue; // cell is entirely inside/outside of the isosurface
+		//flags_cell = 0u; // check with cheap flags if the isosurface goes through the current marching-cubes cell (~15% performance boost)
+		//for(uint i=0u; i<8u; i++) flags_cell |= flags[j[i]];
+		//if(!(flags_cell&(TYPE_S|TYPE_E|TYPE_I))) continue; // cell is entirely inside/outside of the isosurface
 		float v[8];
 		for(uint i=0u; i<8u; i++) v[i] = phi[j[i]];
 		float3 triangles[15]; // maximum of 5 triangles with 3 vertices each
-		const uint tn = marching_cubes(v, 0.5f, triangles); // run marching cubes algorithm
-		if(tn==0u) continue; // if returned tn value is non-zero, iterate through triangles
-		const float3 offset = (float3)((float)xyz.x+0.5f-0.5f*(float)Nx, (float)xyz.y+0.5f-0.5f*(float)Ny, (float)xyz.z+0.5f-0.5f*(float)Nz);
-		for(uint i=0u; i<tn; i++) {
-			const float3 p0 = triangles[3u*i   ]+offset;
-			const float3 p1 = triangles[3u*i+1u]+offset;
-			const float3 p2 = triangles[3u*i+2u]+offset;
-			const float intersect = intersect_triangle_bidirectional(r, p0, p1, p2); // for each triangle, check ray-triangle intersection
-			if(intersect>0.0f) { // intersection found (there can only be exactly 1 intersection)
-				const uint xq =  ((uint)xyz.x   +2u)%Nx; // central difference stencil on each cube corner point
-				const uint xm =  ((uint)xyz.x+Nx-1u)%Nx;
-				const uint yq = (((uint)xyz.y   +2u)%Ny)*Nx;
-				const uint ym = (((uint)xyz.y+Ny-1u)%Ny)*Nx;
-				const uint zq = (((uint)xyz.z   +2u)%Nz)*Ny*Nx;
-				const uint zm = (((uint)xyz.z+Nz-1u)%Nz)*Ny*Nx;
-				float3 n[8];
-				n[0] = (float3)(phi[xm+y0+z0]-v[1], phi[x0+ym+z0]-v[4], phi[x0+y0+zm]-v[3]); // central difference stencil on each cube corner point
-				n[1] = (float3)(v[0]-phi[xq+y0+z0], phi[xp+ym+z0]-v[5], phi[xp+y0+zm]-v[2]); // compute normal vectors from gradient
-				n[2] = (float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq]); // normalize later during trilinear interpolation more efficiently
-				n[3] = (float3)(phi[xm+y0+zp]-v[2], phi[x0+ym+zp]-v[7], v[0]-phi[x0+y0+zq]);
-				n[4] = (float3)(phi[xm+yp+z0]-v[5], v[0]-phi[x0+yq+z0], phi[x0+yp+zm]-v[7]);
-				n[5] = (float3)(v[4]-phi[xq+yp+z0], v[1]-phi[xp+yq+z0], phi[xp+yp+zm]-v[6]);
-				n[6] = (float3)(v[7]-phi[xq+yp+zp], v[2]-phi[xp+yq+zp], v[5]-phi[xp+yp+zq]);
-				n[7] = (float3)(phi[xm+yp+zp]-v[6], v[3]-phi[x0+yq+zp], v[4]-phi[x0+yp+zq]);
-				const float3 p = r.origin+intersect*r.direction-offset; // intersection point minus offset
-				const float x1=p.x-floor(p.x), y1=p.y-floor(p.y), z1=p.z-floor(p.z), x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
-				*normal = normalize(
-					(x0*y0*z0*rsqrt(fma(n[0].x, n[0].x, fma(n[0].y, n[0].y, fma(n[0].z, n[0].z, 1E-9f)))))*n[0]+
-					(x1*y0*z0*rsqrt(fma(n[1].x, n[1].x, fma(n[1].y, n[1].y, fma(n[1].z, n[1].z, 1E-9f)))))*n[1]+
-					(x1*y0*z1*rsqrt(fma(n[2].x, n[2].x, fma(n[2].y, n[2].y, fma(n[2].z, n[2].z, 1E-9f)))))*n[2]+
-					(x0*y0*z1*rsqrt(fma(n[3].x, n[3].x, fma(n[3].y, n[3].y, fma(n[3].z, n[3].z, 1E-9f)))))*n[3]+
-					(x0*y1*z0*rsqrt(fma(n[4].x, n[4].x, fma(n[4].y, n[4].y, fma(n[4].z, n[4].z, 1E-9f)))))*n[4]+
-					(x1*y1*z0*rsqrt(fma(n[5].x, n[5].x, fma(n[5].y, n[5].y, fma(n[5].z, n[5].z, 1E-9f)))))*n[5]+
-					(x1*y1*z1*rsqrt(fma(n[6].x, n[6].x, fma(n[6].y, n[6].y, fma(n[6].z, n[6].z, 1E-9f)))))*n[6]+
-					(x0*y1*z1*rsqrt(fma(n[7].x, n[7].x, fma(n[7].y, n[7].y, fma(n[7].z, n[7].z, 1E-9f)))))*n[7]
-				); // perform normalization and trilinear interpolation
-				return intersect; // intersection found, exit loop, process transmission ray
+		uint tn = marching_cubes(v, 0.5f, triangles); // run marching cubes algorithm
+		if(tn > 0u) { // if returned tn value is non-zero, iterate through triangles
+			const float3 offset = (float3)((float)xyz.x+0.5f-0.5f*(float)Nx, (float)xyz.y+0.5f-0.5f*(float)Ny, (float)xyz.z+0.5f-0.5f*(float)Nz);
+			for(uint i=0u; i<tn; i++) {
+				const float3 p0 = triangles[3u*i   ]+offset;
+				const float3 p1 = triangles[3u*i+1u]+offset;
+				const float3 p2 = triangles[3u*i+2u]+offset;
+				const float intersect = intersect_triangle_bidirectional(r, p0, p1, p2); // for each triangle, check ray-triangle intersection
+				if(intersect>0.0f) { // intersection found (there can only be exactly 1 intersection)
+					const uint xq =  ((uint)xyz.x   +2u)%Nx; // central difference stencil on each cube corner point
+					const uint xm =  ((uint)xyz.x+Nx-1u)%Nx;
+					const uint yq = (((uint)xyz.y   +2u)%Ny)*Nx;
+					const uint ym = (((uint)xyz.y+Ny-1u)%Ny)*Nx;
+					const uint zq = (((uint)xyz.z   +2u)%Nz)*Ny*Nx;
+					const uint zm = (((uint)xyz.z+Nz-1u)%Nz)*Ny*Nx;
+					float3 n[8];
+					n[0] = (float3)(phi[xm+y0+z0]-v[1], phi[x0+ym+z0]-v[4], phi[x0+y0+zm]-v[3]); // central difference stencil on each cube corner point
+					n[1] = (float3)(v[0]-phi[xq+y0+z0], phi[xp+ym+z0]-v[5], phi[xp+y0+zm]-v[2]); // compute normal vectors from gradient
+					n[2] = (float3)(v[3]-phi[xq+y0+zp], phi[xp+ym+zp]-v[6], v[1]-phi[xp+y0+zq]); // normalize later during trilinear interpolation more efficiently
+					n[3] = (float3)(phi[xm+y0+zp]-v[2], phi[x0+ym+zp]-v[7], v[0]-phi[x0+y0+zq]);
+					n[4] = (float3)(phi[xm+yp+z0]-v[5], v[0]-phi[x0+yq+z0], phi[x0+yp+zm]-v[7]);
+					n[5] = (float3)(v[4]-phi[xq+yp+z0], v[1]-phi[xp+yq+z0], phi[xp+yp+zm]-v[6]);
+					n[6] = (float3)(v[7]-phi[xq+yp+zp], v[2]-phi[xp+yq+zp], v[5]-phi[xp+yp+zq]);
+					n[7] = (float3)(phi[xm+yp+zp]-v[6], v[3]-phi[x0+yq+zp], v[4]-phi[x0+yp+zq]);
+					const float3 p = r.origin+intersect*r.direction-offset; // intersection point minus offset
+					const float x1=p.x-floor(p.x), y1=p.y-floor(p.y), z1=p.z-floor(p.z), x0=1.0f-x1, y0=1.0f-y1, z0=1.0f-z1; // calculate interpolation factors
+					*normal = normalize(
+						(x0*y0*z0*rsqrt(fma(n[0].x, n[0].x, fma(n[0].y, n[0].y, fma(n[0].z, n[0].z, 1E-9f)))))*n[0]+
+						(x1*y0*z0*rsqrt(fma(n[1].x, n[1].x, fma(n[1].y, n[1].y, fma(n[1].z, n[1].z, 1E-9f)))))*n[1]+
+						(x1*y0*z1*rsqrt(fma(n[2].x, n[2].x, fma(n[2].y, n[2].y, fma(n[2].z, n[2].z, 1E-9f)))))*n[2]+
+						(x0*y0*z1*rsqrt(fma(n[3].x, n[3].x, fma(n[3].y, n[3].y, fma(n[3].z, n[3].z, 1E-9f)))))*n[3]+
+						(x0*y1*z0*rsqrt(fma(n[4].x, n[4].x, fma(n[4].y, n[4].y, fma(n[4].z, n[4].z, 1E-9f)))))*n[4]+
+						(x1*y1*z0*rsqrt(fma(n[5].x, n[5].x, fma(n[5].y, n[5].y, fma(n[5].z, n[5].z, 1E-9f)))))*n[5]+
+						(x1*y1*z1*rsqrt(fma(n[6].x, n[6].x, fma(n[6].y, n[6].y, fma(n[6].z, n[6].z, 1E-9f)))))*n[6]+
+						(x0*y1*z1*rsqrt(fma(n[7].x, n[7].x, fma(n[7].y, n[7].y, fma(n[7].z, n[7].z, 1E-9f)))))*n[7]
+					); // perform normalization and trilinear interpolation
+					*hit_type = MAT_WATER;
+					return intersect; // intersection found, exit loop, process transmission ray
+				}
+			}
+		}
+		// if fluid hit failed, try to hit solid
+		if(xyz.x<=1 || xyz.y<=1 || xyz.z<=1 || xyz.x>=(int)Nx-2 || xyz.y>=(int)Ny-2 || xyz.z>=(int)Nz-2) continue;
+		for(uint i=0u; i<8u; i++) v[i] = (float)((flags[j[i]]&TYPE_BO)==TYPE_S);
+		tn = marching_cubes(v, 0.5f, triangles);
+		if (tn > 0u) {
+			const float3 offset = (float3)((float)xyz.x+0.5f-0.5f*(float)Nx, (float)xyz.y+0.5f-0.5f*(float)Ny, (float)xyz.z+0.5f-0.5f*(float)Nz);
+			for(uint i=0u; i<tn; i++) {
+				const float3 p0 = triangles[3u*i   ]+offset;
+				const float3 p1 = triangles[3u*i+1u]+offset;
+				const float3 p2 = triangles[3u*i+2u]+offset;
+				const float intersect = intersect_triangle_bidirectional(r, p0, p1, p2);
+				if (intersect > 0.0f) {
+					*normal = normalize(cross(p1-p0, p2-p0));
+					*hit_type = MAT_MATTE;
+					return intersect;
+				}	
 			}
 		}
 	}
-	return (flags_cell&TYPE_F)&&!(flags_cell&TYPE_S) ? intersect_cuboid_inside_with_normal(r, (float3)(0.0f, 0.0f, 0.0f), (float)Nx, (float)Ny, (float)Nz, normal) : -1.0f;
+	if ((flags_cell&TYPE_F)&&!(flags_cell&TYPE_S)) {
+		*hit_type = MAT_WATER;
+		return intersect_cuboid_inside_with_normal(r, (float3)(0.0f, 0.0f, 0.0f), (float)Nx, (float)Ny, (float)Nz, normal);
+	} else {
+		return -1;
+	}
+	// return (flags_cell&TYPE_F)&&!(flags_cell&TYPE_S) ? intersect_cuboid_inside_with_normal(r, (float3)(0.0f, 0.0f, 0.0f), (float)Nx, (float)Ny, (float)Nz, normal) : -1.0f;
 }
 )+R(bool raytrace_phi_mirror(const ray ray_in, ray* ray_reflect, const global float* phi, const global uchar* flags, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) { // only reflection
 	float3 normal;
-	float d = ray_grid_traverse(ray_in, phi, flags, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
+	int hit_type;
+	float d = ray_grid_traverse(ray_in, phi, flags, &hit_type, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
 	if(d==-1.0f) return false; // no intersection found
 	ray_reflect->origin = ray_in.origin+(d-0.005f)*ray_in.direction; // start intersection points a bit in front triangle to avoid self-reflection
 	ray_reflect->direction = reflect(ray_in.direction, normal);
 	return true;
 }
-)+R(bool raytrace_phi(const ray ray_in, ray* ray_reflect, ray* ray_transmit, float* reflectivity, float* transmissivity, const global float* phi, const global uchar* flags, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) {
+)+R(bool raytrace_phi(const ray ray_in, ray* ray_reflect, ray* ray_transmit, float* reflectivity, float* transmissivity, int* hit_type, const global float* phi, const global uchar* flags, const int* material, const global int* skybox, const uint Nx, const uint Ny, const uint Nz) {
 	float3 normal;
-	float d = ray_grid_traverse(ray_in, phi, flags, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
+	float d = ray_grid_traverse(ray_in, phi, flags, hit_type, &normal, Nx, Ny, Nz); // move ray through lattice, at each cell call marching_cubes
 	if(d==-1.0f) return false; // no intersection found
-	const float ray_in_normal = dot(ray_in.direction, normal);
-	const bool is_inside = ray_in_normal>0.0f; // camera is in fluid
-	ray_reflect->origin = ray_in.origin+(d-0.005f)*ray_in.direction; // start intersection points a bit in front triangle to avoid self-reflection
-	ray_reflect->direction = reflect(ray_in.direction, normal); // compute reflection ray
-	ray ray_internal; // compute internal ray and transmission ray
-	ray_internal.origin = ray_in.origin+(d+0.005f)*ray_in.direction; // start intersection points a bit behind triangle to avoid self-transmission
-	ray_internal.direction = refract(ray_in.direction, normal, def_n);
-	const float wr = clamp(sq(cb(2.0f*acospi(fabs(ray_in_normal)))), 0.0f, 1.0f); // increase reflectivity if ray intersects surface at shallow angle
-	if(is_inside) { // swap ray_reflect and ray_internal
-		const float3 ray_internal_origin = ray_internal.origin;
-		ray_internal.origin = ray_reflect->origin;
-		ray_internal.direction = ray_reflect->direction;
-		ray_reflect->origin = ray_internal_origin; // re-use internal ray origin
-		ray_reflect->direction = refract(ray_in.direction, -normal, 1.0f/def_n); // compute refraction again: refract out of fluid
-		if(sq(1.0f/def_n)-1.0f+sq(ray_in_normal)>=0.0f) { // refraction through Snell's window
-			ray_transmit->origin = ray_reflect->origin; // reflection ray and transmission ray are the same
-			ray_transmit->direction = ray_reflect->direction;
-			*reflectivity = 0.0f;
-			*transmissivity = exp(def_attenuation*d); // Beer-Lambert law
-			return true;
+	if (*hit_type == MAT_WATER && *material == MAT_WATER) {
+		const float ray_in_normal = dot(ray_in.direction, normal);
+		const bool is_inside = ray_in_normal>0.0f; // camera is in fluid
+		ray_reflect->origin = ray_in.origin+(d-0.005f)*ray_in.direction; // start intersection points a bit in front triangle to avoid self-reflection
+		ray_reflect->direction = reflect(ray_in.direction, normal); // compute reflection ray
+		ray ray_internal; // compute internal ray and transmission ray
+		ray_internal.origin = ray_in.origin+(d+0.005f)*ray_in.direction; // start intersection points a bit behind triangle to avoid self-transmission
+		ray_internal.direction = refract(ray_in.direction, normal, def_n);
+		const float wr = clamp(sq(cb(2.0f*acospi(fabs(ray_in_normal)))), 0.0f, 1.0f); // increase reflectivity if ray intersects surface at shallow angle
+		if(is_inside) { // swap ray_reflect and ray_internal
+			const float3 ray_internal_origin = ray_internal.origin;
+			ray_internal.origin = ray_reflect->origin;
+			ray_internal.direction = ray_reflect->direction;
+			ray_reflect->origin = ray_internal_origin; // re-use internal ray origin
+			ray_reflect->direction = refract(ray_in.direction, -normal, 1.0f/def_n); // compute refraction again: refract out of fluid
+			if(sq(1.0f/def_n)-1.0f+sq(ray_in_normal)>=0.0f) { // refraction through Snell's window
+				ray_transmit->origin = ray_reflect->origin; // reflection ray and transmission ray are the same
+				ray_transmit->direction = ray_reflect->direction;
+				*reflectivity = 0.0f;
+				*transmissivity = exp(def_attenuation*d); // Beer-Lambert law
+				return true;
+			}
 		}
+		float d_internal = d;
+		int internal_hit;
+		d = ray_grid_traverse(ray_internal, phi, flags, &internal_hit, &normal, Nx, Ny, Nz); // 2nd ray-grid traversal call: refraction (camera outside) or total internal reflection (camera inside)
+		ray_transmit->origin = d!=-1.0f ? ray_internal.origin+(d+0.005f)*ray_internal.direction : ray_internal.origin; // start intersection points a bit behind triangle to avoid self-transmission
+		ray_transmit->direction = d!=-1.0f ? refract(ray_internal.direction, -normal, 1.0f/def_n) : ray_internal.direction; // internal ray intersects isosurface : internal ray does not intersect again
+		*reflectivity = is_inside ? 0.0f : wr; // is_inside means camera is inside fluid, so this is a total internal reflection down here
+		*transmissivity = d!=-1.0f ? exp(def_attenuation*((float)is_inside*d_internal+d)) : (float)(def_attenuation==0.0f); // Beer-Lambert law
+	} else {
+		// Simplified lambertian material, bounce ray along the normal
+		ray_reflect->origin = ray_in.origin + d*ray_in.direction;
+		ray_reflect->direction = normal;
+		*reflectivity = fabs(dot(ray_in.direction, normal));
 	}
-	float d_internal = d;
-	d = ray_grid_traverse(ray_internal, phi, flags, &normal, Nx, Ny, Nz); // 2nd ray-grid traversal call: refraction (camera outside) or total internal reflection (camera inside)
-	ray_transmit->origin = d!=-1.0f ? ray_internal.origin+(d+0.005f)*ray_internal.direction : ray_internal.origin; // start intersection points a bit behind triangle to avoid self-transmission
-	ray_transmit->direction = d!=-1.0f ? refract(ray_internal.direction, -normal, 1.0f/def_n) : ray_internal.direction; // internal ray intersects isosurface : internal ray does not intersect again
-	*reflectivity = is_inside ? 0.0f : wr; // is_inside means camera is inside fluid, so this is a total internal reflection down here
-	*transmissivity = d!=-1.0f ? exp(def_attenuation*((float)is_inside*d_internal+d)) : (float)(def_attenuation==0.0f); // Beer-Lambert law
 	return true;
 }
 )+R(float ray_seek_solid(const ray r, const global uchar* flags, float3* normal, const uint Nx, const uint Ny, const uint Nz) {
@@ -876,8 +911,6 @@ string opencl_c_container() { return R( // ########################## begin of O
 	float tmx = tdx*(dx>0 ? 1.0f-fxa : fxa);
 	float tmy = tdy*(dy>0 ? 1.0f-fya : fya);
 	float tmz = tdz*(dz>0 ? 1.0f-fza : fza);
-	uchar flags_cell = 0u;
-	uchar last_flag = 0u;
 	while(true) {
 		if(tmx<tmy) {
 			if(tmx<tmz) { xyz.x += dx; tmx += tdx; } else { xyz.z += dz; tmz += tdz; }
@@ -2743,16 +2776,17 @@ string opencl_c_container() { return R( // ########################## begin of O
 	}
 }
 
-)+R(int raytrace_phi_next_ray(const ray reflection, const ray transmission, const float reflectivity, const float transmissivity, const global float* phi, const global uchar* flags, const global int* skybox) {
+)+R(int raytrace_phi_next_ray(const ray reflection, const ray transmission, const float reflectivity, const float transmissivity, const global float* phi, const global uchar* flags, const global int* material, const global int* skybox) {
 	int color_reflect=0, color_transmit=0;
 	ray reflection_next, transmission_next;
+	int hit_type;
 	float reflection_reflectivity, reflection_transmissivity, transmission_reflectivity, transmission_transmissivity;
-	if(raytrace_phi(reflection, &reflection_next, &transmission_next, &reflection_reflectivity, &reflection_transmissivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
+	if(raytrace_phi(reflection, &reflection_next, &transmission_next, &reflection_reflectivity, &reflection_transmissivity, &hit_type, phi, flags, material, skybox, def_Nx, def_Ny, def_Nz)) {
 		color_reflect = last_ray(reflection_next, transmission_next, reflection_reflectivity, reflection_transmissivity, skybox);
 	} else {
 		color_reflect = skybox_color(reflection, skybox);
 	}
-	if(raytrace_phi(transmission, &reflection_next, &transmission_next, &transmission_reflectivity, &transmission_transmissivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
+	if(raytrace_phi(transmission, &reflection_next, &transmission_next, &transmission_reflectivity, &transmission_transmissivity, &hit_type, phi, flags, material, skybox, def_Nx, def_Ny, def_Nz)) {
 		color_transmit = last_ray(reflection_next, transmission_next, transmission_reflectivity, transmission_transmissivity, skybox);
 	} else {
 		color_transmit = skybox_color(transmission, skybox);
@@ -2770,7 +2804,7 @@ string opencl_c_container() { return R( // ########################## begin of O
 	return color_reflect;
 }
 
-)+R(kernel void graphics_raytrace_phi(const global float* phi, const global uchar* flags, const global int* skybox, const global float* camera, global int* bitmap) { // marching cubes
+)+R(kernel void graphics_raytrace_phi(const global float* phi, const global uchar* flags, const uint material, const global int* skybox, const global float* camera, global int* bitmap) { // marching cubes
 	const uint gid = get_global_id(0); // workgroup size alignment is critical
 	const uint lid = get_local_id(0); // make workgropus not horizontal stripes of pixels, but 8x8 rectangular (close to square) tiles
 	const uint lsi = get_local_size(0); // (50% performance boost due to more coalesced memory access)
@@ -2784,33 +2818,50 @@ string opencl_c_container() { return R( // ########################## begin of O
 	ray camray = get_camray(x, y, camera_cache);
 	const float distance = intersect_cuboid(camray, (float3)(0.0f, 0.0f, 0.0f), (float)def_Nx, (float)def_Ny, (float)def_Nz);
 	camray.origin = camray.origin+fmax(distance+0.005f, 0.005f)*camray.direction;
+	int pixelcolor = 0;
+	int hit_type = -1;
+	
 	ray reflection, transmission; // reflection and transmission
 	float reflectivity, transmissivity;
-	int pixelcolor = 0;
-	if(raytrace_phi(camray, &reflection, &transmission, &reflectivity, &transmissivity, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) {
-		float refl_reflectivity, transm_reflectivity;
-		int reflection_color, transmission_color;
+	if(raytrace_phi(camray, &reflection, &transmission, &reflectivity, &transmissivity, &hit_type, phi, flags, &material, skybox, def_Nx, def_Ny, def_Nz)) {
+		if (hit_type == MAT_WATER && material == MAT_WATER) {
+			float refl_reflectivity, transm_reflectivity;
+			int reflection_color, transmission_color;
 
-		if(raytrace_solid(reflection, &refl_reflectivity, flags, def_Nx, def_Ny, def_Nz)) {
-			reflection_color = color_dim(0xDFDFDF, refl_reflectivity);
-		} else {
-			reflection_color = skybox_color(reflection, skybox);
-		}
+			if(raytrace_solid(reflection, &refl_reflectivity, flags, def_Nx, def_Ny, def_Nz)) {
+				reflection_color = color_dim(0xDFDFDF, refl_reflectivity);
+			} else {
+				reflection_color = skybox_color(reflection, skybox);
+			}
 
-		if(raytrace_solid(transmission, &transm_reflectivity, flags, def_Nx, def_Ny, def_Nz)) {
-			transmission_color = color_dim(0xDFDFDF, transm_reflectivity);
-		} else {
-			transmission_color = skybox_color(transmission, skybox);
-		}
-		transmission_color = color_mix(transmission_color, def_absorption_color, transmissivity);
-		pixelcolor = color_mix(reflection_color, transmission_color, reflectivity); // 1 ray pass
-		
+			if(raytrace_solid(transmission, &transm_reflectivity, flags, def_Nx, def_Ny, def_Nz)) {
+				transmission_color = color_dim(0xDFDFDF, transm_reflectivity);
+			} else {
+				transmission_color = skybox_color(transmission, skybox);
+			}
+			transmission_color = color_mix(transmission_color, def_absorption_color, transmissivity);
+			pixelcolor = color_mix(reflection_color, transmission_color, reflectivity); // 1 ray pass
+		} else if (material == MAT_MATTE || hit_type == MAT_MATTE) {  // only reflection along normal
+			int base_color = (hit_type == MAT_WATER) ? 55<<16|155<<8|255 : 0xDFDFDF;
+			hit_type = -1;
+			float refl_reflectivity;
+			int reflection_color;
+			if (raytrace_phi(camray, &reflection, &transmission, &refl_reflectivity, &transmissivity, &hit_type, phi, flags, &material, skybox, def_Nx, def_Ny, def_Nz)) {
+				if (hit_type == MAT_WATER) {
+					reflection_color = color_dim(55<<16|155<<8|255, refl_reflectivity);
+				} else if (hit_type == MAT_MATTE) {
+					reflection_color = color_dim(0xDFDFDF, refl_reflectivity);
+				}
+			} else {
+				reflection_color = skybox_color(reflection, skybox);
+			}
+			pixelcolor = color_mix(base_color, reflection_color, reflectivity);
+		} 		
 		//pixelcolor = raytrace_phi_next_ray(reflection, transmission, reflectivity, transmissivity, phi, flags, skybox); // 2 ray passes
-	} else if (raytrace_solid(camray, &reflectivity, flags, def_Nx, def_Ny, def_Nz)) {
-		pixelcolor = color_dim(0xDFDFDF, reflectivity);
 	} else {
 		pixelcolor = skybox_color(camray, skybox);
 	}
+
 	//if(raytrace_phi_mirror(camray, &reflection, phi, flags, skybox, def_Nx, def_Ny, def_Nz)) { // reflection only
 	//	//pixelcolor = skybox_color(reflection, skybox); // 1 ray pass
 	//	pixelcolor = raytrace_phi_next_ray_mirror(reflection, phi, flags, skybox); // 2 ray passes

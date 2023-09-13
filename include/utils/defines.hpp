@@ -62,6 +62,9 @@
 #define VIS_PHI_RAYTRACE  0b01000000
 #define VIS_PARTICLES     0b10000000
 
+#define MAT_WATER 0
+#define MAT_MATTE 1
+
 #if defined(FP16S) || defined(FP16C)
 #define fpxx ushort
 #else // FP32

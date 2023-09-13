@@ -9,45 +9,11 @@
  * 
  * @date        2023-07-14
  */
+#include <cstring>
 #include <fx3d/scenes.hpp>
 #include <utils/shapes.hpp>
 
 /*
-fx3d::LBMInitializer fx3d::DetermineScene(const std::string& Name)
-{
-     if (Name == "dam_break")
-        return fx3d::DamBreakInit;
-    else if (Name == "colliding_droplets")
-        return fx3d::CollidingDropletsInit;
-    
-    std::cerr << "Unknown scene \"" << Name << "\"." << std::endl;
-    return nullptr;
-}
-
-
-fx3d::LBM* fx3d::DamBreakInit(const nlohmann::json& json)
-{
-    fx3d::Settings::EnableFeature(Feature::VOLUME_FORCE);
-    fx3d::Settings::EnableFeature(Feature::SURFACE);
-
-    // ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	fx3d::LBM* lbm = new fx3d::LBM(128u, 256u, 256u, 0.005f, 0.0f, 0.0f, -0.0002f, 0.0001f);
-	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm->get_Nx(), Ny=lbm->get_Ny(), Nz=lbm->get_Nz(); 
-    for(ulong n=0ull; n < lbm->get_N(); n++) 
-    { 
-        uint x=0u, y=0u, z=0u; lbm->coordinates(n, x, y, z);
-		if(z<Nz*6u/8u && y<Ny/8u) 
-            lbm->flags[n] = TYPE_F;
-		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) 
-            lbm->flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
-	lbm->graphics.visualization_modes = lbm->get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
-
-    return lbm;
-}
-
-
 fx3d::LBM* fx3d::CollidingDropletsInit(const nlohmann::json& json)
 {
     fx3d::Settings::EnableFeature(Feature::VOLUME_FORCE);
@@ -269,6 +235,11 @@ void fx3d::Scene::config_graphics(const nlohmann::json &config) {
 	if (config.contains("graphics")) {
 		std::string skybox_path = config["graphics"]["skybox"];
 		fx3d::GraphicsSettings::SetSkyboxPath(skybox_path);
+		if (config["graphics"].contains("matte_fluid") && config["graphics"]["matte_fluid"]) {
+			fx3d::GraphicsSettings::SetFluidMaterial(MAT_MATTE);
+		} else {
+			fx3d::GraphicsSettings::SetFluidMaterial(MAT_WATER);
+		}
 	}
 }
 
