@@ -151,6 +151,10 @@ fx3d::Scene::~Scene() {
 	delete this->lbm;
 }
 
+void fx3d::Scene::enable_features() {
+	fx3d::Settings::EnableFeature(fx3d::Feature::VOLUME_FORCE);
+    fx3d::Settings::EnableFeature(fx3d::Feature::SURFACE);
+}
 
 void fx3d::Scene::custom_grid_initialization() {
     for (ulong n=0ull; n < this->lbm->get_N(); n++) { 

@@ -54,6 +54,7 @@ protected:
     
     Mesh* load_mesh_stl(const string& stl_path, const float3& center, const float3x3& rotation, const float3& scale, const float size) const;
 
+    virtual void enable_features();
     virtual void config_sim_params(const nlohmann::json &config);
     virtual void config_obstacles(const nlohmann::json &config);
     virtual void config_fluid_bodies(const nlohmann::json &config);
