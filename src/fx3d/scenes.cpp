@@ -117,6 +117,10 @@ bool fx3d::Scene::is_current_frame_output(const ulong sim_steps, const float out
 
 void fx3d::Scene::configure(const nlohmann::json &config) {
 
+	/* Simulator features */
+
+	enable_features();
+
 	/* Export configuration */
 
 	config_export(config);
