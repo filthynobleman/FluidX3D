@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <utils/defines.hpp>
 #include <utils/opencl.hpp>
 #include <utils/graphics.hpp>
@@ -300,7 +301,44 @@ public:
 			int nnz = 0;
 			compress_array(data, nn, idxs, vals, nnz);
     		write_coo_tensor(path, lbm->get_Nx(), lbm->get_Ny(), lbm->get_Nz(), idxs, vals, nnz);
+			free((void*)idxs);
+			free((void*)vals);
 			//delete[] data;
+		}
+		inline void write_particles(const string& path, const T* velocity, const float nu, const float m) {
+			T* data = buffers[0]->data(); // new T[range()];
+			int nn = lbm->get_N();
+			int* idxs = (int*)std::malloc(nn * sizeof(int));
+			float* vals = float_alloc(nn);
+			int nnz = 0;
+			compress_array(data, nn, idxs, vals, nnz);
+
+			std::ofstream outstream;
+			outstream.open(path, std::ios::binary);
+			float* particles = new float[nnz * 8];
+			uint idx;
+			float3 pos, vel;
+			for (uint i = 0; i < nnz; i++) {
+				idx = idxs[i];
+				pos = position(idx);
+				vel = velocity[idx];
+				particles[(i * 8)    ] = pos.x;
+				particles[(i * 8) + 1] = pos.y;
+				particles[(i * 8) + 2] = pos.z;
+				particles[(i * 8) + 3] = vel.x;
+				particles[(i * 8) + 4] = pos.y;
+				particles[(i * 8) + 5] = pos.z;
+				particles[(i * 8) + 6] = nu;
+				particles[(i * 8) + 7] = m;
+			}
+			outstream.write((const char*)&nnz, sizeof(int));
+			outstream.write((const char*)idxs, nnz * sizeof(int));
+			outstream.write((const char*)vals, nnz * sizeof(float));
+			outstream.close();
+
+			delete particles;
+			free((void*)idxs);
+			free((void*)vals);
 		}
 
 	public:

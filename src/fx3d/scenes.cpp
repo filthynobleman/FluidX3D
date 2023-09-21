@@ -81,6 +81,7 @@ Mesh *fx3d::Scene::load_mesh_stl(const string &stl_path, const float3 &center, c
 }
 
 void fx3d::Scene::run() {
+	export_frame();
 	for (uint t = 0; t < sim_steps; t++) {
 		this->lbm->run(update_dt);
 		if (is_current_frame_output(sim_steps, out_seconds, fps)) {
