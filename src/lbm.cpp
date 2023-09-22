@@ -1072,17 +1072,43 @@ void LBM::write_particles(const string& path) const {
 	float m = 1000 * pow(2 * rad, 3);
 	float* part_out = new float[pN * 8];
 
-	uint idx;
 	float3 pos, vel;
+	uint3 xyz;
+	uint3 ijk;
+	uint n;
+	float3 a;
+	uint3 b;
+	float3 p1, p0;
+	float3 un[8]; // velocities of unit cube corner points
 	for (uint i = 0; i < pN; i++) {
 		pos = (float3)(particles->x[i], particles->y[i], particles->z[i]);
-		vel = (float3)(lbm[0]->u.x[i], lbm[0]->u.y[i], lbm[0]->u.z[i]);
+
+		a = (float3)(pos.x - 0.5f + 1.5f * Nx, pos.y - 0.5f + 1.5f * Ny, pos.z - 0.5f + 1.5f * Nz); // subtract lattice offsets
+		b = (uint3)((uint)a.x, (uint)a.y, (uint)a.z); // integer casting to find bottom left corner
+		p1 = a - (float3)(b.x, b.y, b.z); // calculate interpolation factors
+		p0 = 1.0f - p1;
+		for(uint c = 0u; c < 8u; c++) { // count over eight corner points
+			ijk = (uint3)((c&0x04u) >> 2, (c&0x02u) >> 1, c&0x01u); // disassemble c into corner indices ijk
+			xyz = (uint3)((b.x + ijk.x) % Nx, (b.y + ijk.y) % Ny, (b.z + ijk.z) % Nz); // calculate corner lattice positions
+			n = xyz.x + (xyz.y + xyz.z * Ny) * Nx; // calculate lattice linear index
+			un[c] = (float3)(lbm[0]->u.x[n], lbm[0]->u.y[n], lbm[0]->u.z[n]); // load velocity from lattice point
+		}
+		vel = (p0.x * p0.y * p0.z) * un[0] + 
+			(p0.x * p0.y * p1.z) * un[1] +
+			(p0.x * p1.y * p0.z) * un[2] +
+			(p0.x * p1.y * p1.z) * un[3] +
+			(p1.x * p0.y * p0.z) * un[4] +
+			(p1.x * p0.y * p1.z) * un[5] +
+			(p1.x * p1.y * p0.z) * un[6] +
+			(p1.x * p1.y * p1.z) * un[7];
+		// vel = (float3)(lbm[0]->u.x[i], lbm[0]->u.y[i], lbm[0]->u.z[i]);
+		
 		part_out[(i * 8)    ] = pos.x;
 		part_out[(i * 8) + 1] = pos.y;
 		part_out[(i * 8) + 2] = pos.z;
 		part_out[(i * 8) + 3] = vel.x;
-		part_out[(i * 8) + 4] = pos.y;
-		part_out[(i * 8) + 5] = pos.z;
+		part_out[(i * 8) + 4] = vel.y;
+		part_out[(i * 8) + 5] = vel.z;
 		part_out[(i * 8) + 6] = nu;
 		part_out[(i * 8) + 7] = m;
 	}
@@ -1094,7 +1120,7 @@ void LBM::write_particles(const string& path) const {
 	outstream.write((const char*)&Ny, sizeof(int));
 	outstream.write((const char*)&Nz, sizeof(int));
 	outstream.write((const char*)&pN, sizeof(int));
-	outstream.write((const char*)particles, pN * 8 * sizeof(float));
+	outstream.write((const char*)part_out, pN * 8 * sizeof(float));
 	outstream.close();
 
 	delete part_out;
