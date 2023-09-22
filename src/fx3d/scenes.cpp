@@ -171,9 +171,12 @@ void fx3d::Scene::custom_grid_initialization() {
 		lbm->coordinates(n, x, y, z);
 		if (is_fluid(x, y, z)) {
 			lbm->flags[n] = TYPE_F;
-			full_cells.push_back(n);
 		} else if (is_boundary(x, y, z) || is_static(x, y, z)) {
 			lbm->flags[n] = TYPE_S;
+		}
+
+		if (lbm->flags[n] == TYPE_F) {
+			full_cells.push_back(n);
 		}
 	}
 	if (particles_N > 0) {
