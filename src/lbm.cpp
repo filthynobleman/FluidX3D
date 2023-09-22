@@ -1081,19 +1081,19 @@ void LBM::write_particles(const string& path) const {
 	float3 p1, p0;
 	float3 un[8]; // velocities of unit cube corner points
 	for (uint i = 0; i < pN; i++) {
-		pos = (float3)(particles->x[i], particles->y[i], particles->z[i]);
+		pos = float3(particles->x[i], particles->y[i], particles->z[i]);
 
-		a = (float3)(pos.x - 0.5f + 1.5f * Nx, pos.y - 0.5f + 1.5f * Ny, pos.z - 0.5f + 1.5f * Nz); // subtract lattice offsets
-		b = (uint3)((uint)a.x, (uint)a.y, (uint)a.z); // integer casting to find bottom left corner
-		p1 = a - (float3)(b.x, b.y, b.z); // calculate interpolation factors
+		a = float3(pos.x - 0.5f + 1.5f * Nx, pos.y - 0.5f + 1.5f * Ny, pos.z - 0.5f + 1.5f * Nz); // subtract lattice offsets
+		b = uint3((uint)a.x, (uint)a.y, (uint)a.z); // integer casting to find bottom left corner
+		p1 = a - float3(b.x, b.y, b.z); // calculate interpolation factors
 		p0 = 1.0f - p1;
 		for(uint c = 0u; c < 8u; c++) { // count over eight corner points
-			ijk = (uint3)((c & 0x04u) >> 2, (c & 0x02u) >> 1, c & 0x01u); // disassemble c into corner indices ijk
-			xyz = (uint3)((b.x + ijk.x) % Nx, (b.y + ijk.y) % Ny, (b.z + ijk.z) % Nz); // calculate corner lattice positions
+			ijk = uint3((c & 0x04u) >> 2, (c & 0x02u) >> 1, c & 0x01u); // disassemble c into corner indices ijk
+			xyz = uint3((b.x + ijk.x) % Nx, (b.y + ijk.y) % Ny, (b.z + ijk.z) % Nz); // calculate corner lattice positions
 			n = xyz.x + (xyz.y + xyz.z * Ny) * Nx; // calculate lattice linear index
-			un[c] = (float3)(lbm[0]->u.x[n], lbm[0]->u.y[n], lbm[0]->u.z[n]); // load velocity from lattice point
+			un[c] = float3(lbm[0]->u.x[n], lbm[0]->u.y[n], lbm[0]->u.z[n]); // load velocity from lattice point
 		}
-		vel = (p0.x * p0.y * p0.z) * un[0] + 
+		float3 vel = (p0.x * p0.y * p0.z) * un[0] + 
 			(p0.x * p0.y * p1.z) * un[1] +
 			(p0.x * p1.y * p0.z) * un[2] +
 			(p0.x * p1.y * p1.z) * un[3] +
