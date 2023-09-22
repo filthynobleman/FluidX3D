@@ -331,9 +331,11 @@ public:
 				particles[(i * 8) + 6] = nu;
 				particles[(i * 8) + 7] = m;
 			}
+			outstream.write((const char*)&Nx, sizeof(int));
+			outstream.write((const char*)&Ny, sizeof(int));
+			outstream.write((const char*)&Nz, sizeof(int));
 			outstream.write((const char*)&nnz, sizeof(int));
-			outstream.write((const char*)idxs, nnz * sizeof(int));
-			outstream.write((const char*)vals, nnz * sizeof(float));
+			outstream.write((const char*)particles, nnz * sizeof(float) * 8);
 			outstream.close();
 
 			delete particles;
@@ -421,6 +423,13 @@ public:
 		inline void write_device_to_sparse(const string& path="") {
 			read_from_device();
 			write_host_to_sparse(path);
+		}
+		inline void write_host_to_particles(const string& path="") {
+			write_particles(default_filename(path, name, ".dat", lbm->get_t()));
+		}
+		inline void write_device_to_particles(const string& path="") {
+			read_from_device();
+			write_host_to_particles(path);
 		}
 	};
 
