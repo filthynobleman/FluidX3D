@@ -1088,7 +1088,7 @@ void LBM::write_particles(const string& path) const {
 		p1 = a - (float3)(b.x, b.y, b.z); // calculate interpolation factors
 		p0 = 1.0f - p1;
 		for(uint c = 0u; c < 8u; c++) { // count over eight corner points
-			ijk = (uint3)((c&0x04u) >> 2, (c&0x02u) >> 1, c&0x01u); // disassemble c into corner indices ijk
+			ijk = (uint3)((c & 0x04u) >> 2, (c & 0x02u) >> 1, c & 0x01u); // disassemble c into corner indices ijk
 			xyz = (uint3)((b.x + ijk.x) % Nx, (b.y + ijk.y) % Ny, (b.z + ijk.z) % Nz); // calculate corner lattice positions
 			n = xyz.x + (xyz.y + xyz.z * Ny) * Nx; // calculate lattice linear index
 			un[c] = (float3)(lbm[0]->u.x[n], lbm[0]->u.y[n], lbm[0]->u.z[n]); // load velocity from lattice point

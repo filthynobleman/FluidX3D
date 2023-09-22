@@ -10,6 +10,9 @@
  * @date        2023-07-14
  */
 #include <cstring>
+#include <random>
+#include <algorithm>
+#include <vector>
 #include <fx3d/scenes.hpp>
 #include <utils/shapes.hpp>
 
@@ -162,13 +165,27 @@ void fx3d::Scene::enable_features() {
 }
 
 void fx3d::Scene::custom_grid_initialization() {
+	std::vector<uint> full_cells;
     for (ulong n=0ull; n < this->lbm->get_N(); n++) { 
         uint x=0u, y=0u, z=0u; 
 		lbm->coordinates(n, x, y, z);
 		if (is_fluid(x, y, z)) {
 			lbm->flags[n] = TYPE_F;
+			full_cells.push_back(n);
 		} else if (is_boundary(x, y, z) || is_static(x, y, z)) {
 			lbm->flags[n] = TYPE_S;
+		}
+	}
+	if (particles_N > 0) {
+		std::vector<uint> sampled_cells;
+		sampled_cells.reserve(particles_N);
+		std::sample(full_cells.begin(), full_cells.end(), sampled_cells.begin(), particles_N, std::mt19937{std::random_device{}()});
+		float3 pos;
+		for (uint i = 0; i < particles_N; i++) {
+			pos = lbm->position(sampled_cells[i]);
+			lbm->particles->x[i] = pos.x;
+			lbm->particles->y[i] = pos.y;
+			lbm->particles->z[i] = pos.z;
 		}
 	}
 }
