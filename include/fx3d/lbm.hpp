@@ -132,6 +132,8 @@ public:
 	float get_sigma() const { return sigma; } // get surface tension coefficient
 	float get_alpha() const { return alpha; } // get thermal diffusion coefficient
 	float get_beta() const { return beta; } // get thermal expansion coefficient
+	uint get_particles_N() const { return particles_N; } // get thermal expansion coefficient
+	float get_particles_rho() const { return particles_rho; } // get thermal expansion coefficient
 	ulong get_t() const { return t; } // get discrete time step in LBM units
 	uint get_velocity_set() const; // get LBM velocity set
 	void set_fx(const float fx) { this->fx = fx; } // set global froce per volume
@@ -305,43 +307,6 @@ public:
 			free((void*)vals);
 			//delete[] data;
 		}
-		inline void write_particles(const string& path, const T* velocity, const float nu, const float m) {
-			T* data = buffers[0]->data(); // new T[range()];
-			int nn = lbm->get_N();
-			int* idxs = (int*)std::malloc(nn * sizeof(int));
-			float* vals = float_alloc(nn);
-			int nnz = 0;
-			compress_array(data, nn, idxs, vals, nnz);
-
-			std::ofstream outstream;
-			outstream.open(path, std::ios::binary);
-			float* particles = new float[nnz * 8];
-			uint idx;
-			float3 pos, vel;
-			for (uint i = 0; i < nnz; i++) {
-				idx = idxs[i];
-				pos = position(idx);
-				vel = velocity[idx];
-				particles[(i * 8)    ] = pos.x;
-				particles[(i * 8) + 1] = pos.y;
-				particles[(i * 8) + 2] = pos.z;
-				particles[(i * 8) + 3] = vel.x;
-				particles[(i * 8) + 4] = pos.y;
-				particles[(i * 8) + 5] = pos.z;
-				particles[(i * 8) + 6] = nu;
-				particles[(i * 8) + 7] = m;
-			}
-			outstream.write((const char*)&Nx, sizeof(int));
-			outstream.write((const char*)&Ny, sizeof(int));
-			outstream.write((const char*)&Nz, sizeof(int));
-			outstream.write((const char*)&nnz, sizeof(int));
-			outstream.write((const char*)particles, nnz * sizeof(float) * 8);
-			outstream.close();
-
-			delete particles;
-			free((void*)idxs);
-			free((void*)vals);
-		}
 
 	public:
 		class Pointer {
@@ -398,10 +363,10 @@ public:
 		inline const T operator()(const ulong i, const uint dimension) const { return reference(i, dimension); } // array of structures
 		inline void read_from_device() {
 // #ifndef UPDATE_FIELDS
-		if (!fx3d::Settings::IsFeatureEnabled(fx3d::Feature::UPDATE_FIELDS))
-		{
-			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) lbm->lbm[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
-		}
+			if (!fx3d::Settings::IsFeatureEnabled(fx3d::Feature::UPDATE_FIELDS))
+			{
+				for(uint domain=0u; domain<Dx*Dy*Dz; domain++) lbm->lbm[domain]->enqueue_update_fields(); // make sure data in device memory is up-to-date
+			}
 // #endif // UPDATE_FIELDS
 			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) buffers[domain]->enqueue_read_from_device();
 			for(uint domain=0u; domain<Dx*Dy*Dz; domain++) buffers[domain]->finish_queue();
@@ -423,13 +388,6 @@ public:
 		inline void write_device_to_sparse(const string& path="") {
 			read_from_device();
 			write_host_to_sparse(path);
-		}
-		inline void write_host_to_particles(const string& path="") {
-			write_particles(default_filename(path, name, ".dat", lbm->get_t()));
-		}
-		inline void write_device_to_particles(const string& path="") {
-			read_from_device();
-			write_host_to_particles(path);
 		}
 	};
 
@@ -561,6 +519,7 @@ public:
 	void voxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S, const float3& rotation_center=float3(0.0f), const float3& linear_velocity=float3(0.0f), const float3& rotational_velocity=float3(0.0f)); // voxelize mesh
 	void unvoxelize_mesh_on_device(const Mesh* mesh, const uchar flag=TYPE_S); // remove voxelized triangle mesh from LBM grid
 	void write_mesh_to_vtk(const Mesh* mesh, const string& path="") const; // write mesh to binary .vtk file
+	void write_particles(const string& path="") const;
 	void voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file
 	void voxelize_stl(const string& path, const float3x3& rotation, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (place in box center)
 	void voxelize_stl(const string& path, const float3& center, const float size=0.0f, const uchar flag=TYPE_S); // read and voxelize binary .stl file (no rotation)

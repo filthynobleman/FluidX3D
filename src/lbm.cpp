@@ -1062,6 +1062,43 @@ void LBM::write_mesh_to_vtk(const Mesh* mesh, const string& path) const { // wri
 	print_info("File \""+filename+"\" saved.");
 	fx3d::info.allow_rendering = true;
 }
+void LBM::write_particles(const string& path) const {
+	particles->read_from_device();
+	lbm[0]->u.read_from_device();
+
+	uint pN = lbm[0]->get_particles_N();
+	float nu = lbm[0]->get_nu();
+	float rad = 2.0f / fmax(fmax(Nx, Ny), Nz);
+	float m = 1000 * pow(2 * rad, 3);
+	float* part_out = new float[pN * 8];
+
+	uint idx;
+	float3 pos, vel;
+	for (uint i = 0; i < pN; i++) {
+		pos = (float3)(particles->x[i], particles->y[i], particles->z[i]);
+		vel = (float3)(lbm[0]->u.x[i], lbm[0]->u.y[i], lbm[0]->u.z[i]);
+		part_out[(i * 8)    ] = pos.x;
+		part_out[(i * 8) + 1] = pos.y;
+		part_out[(i * 8) + 2] = pos.z;
+		part_out[(i * 8) + 3] = vel.x;
+		part_out[(i * 8) + 4] = pos.y;
+		part_out[(i * 8) + 5] = pos.z;
+		part_out[(i * 8) + 6] = nu;
+		part_out[(i * 8) + 7] = m;
+	}
+
+	std::ofstream outstream;
+	outstream.open(path, std::ios::binary);
+
+	outstream.write((const char*)&Nx, sizeof(int));
+	outstream.write((const char*)&Ny, sizeof(int));
+	outstream.write((const char*)&Nz, sizeof(int));
+	outstream.write((const char*)&pN, sizeof(int));
+	outstream.write((const char*)particles, pN * 8 * sizeof(float));
+	outstream.close();
+
+	delete part_out;
+}
 void LBM::voxelize_stl(const string& path, const float3& center, const float3x3& rotation, const float size, const uchar flag) { // voxelize triangle mesh
 	const Mesh* mesh = read_stl(path, this->size(), center, rotation, size);
 	flags.write_to_device();
