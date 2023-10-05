@@ -46,6 +46,32 @@ private:
 	uint particles_N = 0u;
 	float particles_rho = 0.0f;
 
+    struct Cuboid {
+
+        float3 center;
+        float3 rotation;
+        float3 sides;
+
+        Cuboid(const float3& center, const float3& rotation, const float3& sides) : 
+            center(center), rotation(rotation), sides(sides) {}
+
+    };
+
+    struct Sphere {
+
+        float3 center;
+        float  radius;
+
+        Sphere(const float3& center, const float radius) : 
+            center(center), radius(radius) {}
+
+    };
+
+    std::vector<Cuboid> cuboid_obst;
+    std::vector<Sphere> sphere_obst;
+    std::vector<Cuboid> cuboid_fluid;
+    std::vector<Sphere> sphere_fluid;
+
 protected:
 
     LBM* lbm;

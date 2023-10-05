@@ -58,11 +58,29 @@ bool fx3d::Scene::is_boundary(uint x, uint y, uint z) const {
 }
 
 bool fx3d::Scene::is_fluid(uint x, uint y, uint z) const {
-    return false;
+    for (auto ptr = cuboid_fluid.begin(); ptr != cuboid_fluid.end(); ptr++) {
+		auto rotate = euler(ptr->rotation);
+		auto xyz = rotate * float3(x, y, z);
+		if (cuboid(xyz.x, xyz.y, xyz.z, ptr->center, ptr->sides)) return true;
+	}
+    for (auto ptr = sphere_fluid.begin(); ptr != sphere_fluid.end(); ptr++) {
+		if (sphere(x, y, z, ptr->center, ptr->radius)) return true;
+	}
+
+	return false;
 }
 
 bool fx3d::Scene::is_static(uint x, uint y, uint z) const {
-    return false;
+    for (auto ptr = cuboid_obst.begin(); ptr != cuboid_obst.end(); ptr++) {
+		auto rotate = euler(ptr->rotation);
+		auto xyz = rotate * float3(x, y, z);
+		if (cuboid(xyz.x, xyz.y, xyz.z, ptr->center, ptr->sides)) return true;
+	}
+    for (auto ptr = sphere_obst.begin(); ptr != sphere_obst.end(); ptr++) {
+		if (sphere(x, y, z, ptr->center, ptr->radius)) return true;
+	}
+
+	return false;
 }
 
 void fx3d::Scene::make_obstacle(const Mesh* geometry) {
@@ -216,16 +234,33 @@ void fx3d::Scene::config_obstacles(const nlohmann::json &config) {
 		nlohmann::json obstacles = config["obstacles"];
 		for (auto ptr = obstacles.begin(); ptr != obstacles.end(); ptr++) {
 			auto obst = *ptr;
-			std::vector<float> center = obst["center"];
-			std::vector<float> rotation = obst["rotation"];
-			std::vector<float> scale = obst["scale"];
-			const Mesh* geometry = load_mesh_stl(
-				obst["mesh_path"], float3(center[0], center[1], center[2]),
-				euler(float3(rotation[0], rotation[1], rotation[2])), 
-				float3(scale[0], scale[1], scale[2]), (float)obst["size"]
-			);
-			make_obstacle(geometry);
-			delete geometry;
+			assert(obst.contains("type"));
+			std::string type = obst["type"];
+			if (type == "mesh") {
+				std::vector<float> center = obst["center"];
+				std::vector<float> rotation = obst["rotation"];
+				std::vector<float> scale = obst["scale"];
+				const Mesh* geometry = load_mesh_stl(
+					obst["mesh_path"], float3(center[0], center[1], center[2]),
+					euler(float3(rotation[0], rotation[1], rotation[2])), 
+					float3(scale[0], scale[1], scale[2]), (float)obst["size"]
+				);
+				make_obstacle(geometry);
+				delete geometry;
+			} else if (type == "cuboid") {
+				std::vector<float> center = obst["center"];
+				std::vector<float> sides = obst["sides"];
+				std::vector<float> rotation = obst["rotation"];
+				cuboid_obst.emplace_back(
+					float3(center[0], center[1], center[2]), 
+					float3(rotation[0], rotation[1], rotation[2]), 
+					float3(sides[0], sides[1], sides[2])
+					);
+			} else if (type == "sphere") {
+				std::vector<float> center = obst["center"];
+				float radius = obst["radius"];
+				sphere_obst.emplace_back(float3(center[0], center[1], center[2]), radius);
+			}
 		}
 	}
 }
@@ -235,16 +270,33 @@ void fx3d::Scene::config_fluid_bodies(const nlohmann::json &config) {
 		nlohmann::json fluids = config["fluids"];
 		for (auto ptr = fluids.begin(); ptr != fluids.end(); ptr++) {
 			auto fluid = *ptr;
-			std::vector<float> center = fluid["center"];
-			std::vector<float> rotation = fluid["rotation"];
-			std::vector<float> scale = fluid["scale"];
-			const Mesh* geometry = load_mesh_stl(
-				fluid["mesh_path"], float3(center[0], center[1], center[2]),
-				euler(float3(rotation[0], rotation[1], rotation[2])), 
-				float3(scale[0], scale[1], scale[2]), (float)fluid["size"]
-			);
-			make_fluid(geometry);	
-			delete geometry;		
+			assert(fluid.contains("type"));
+			std::string type = fluid["type"];
+			if (type == "mesh") {
+				std::vector<float> center = fluid["center"];
+				std::vector<float> rotation = fluid["rotation"];
+				std::vector<float> scale = fluid["scale"];
+				const Mesh* geometry = load_mesh_stl(
+					fluid["mesh_path"], float3(center[0], center[1], center[2]),
+					euler(float3(rotation[0], rotation[1], rotation[2])), 
+					float3(scale[0], scale[1], scale[2]), (float)fluid["size"]
+				);
+				make_fluid(geometry);	
+				delete geometry;		
+			} else if (type == "cuboid") {
+				std::vector<float> center = fluid["center"];
+				std::vector<float> sides = fluid["sides"];
+				std::vector<float> rotation = fluid["rotation"];
+				cuboid_fluid.emplace_back(
+					float3(center[0], center[1], center[2]), 
+					float3(rotation[0], rotation[1], rotation[2]), 
+					float3(sides[0], sides[1], sides[2])
+					);
+			} else if (type == "sphere") {
+				std::vector<float> center = fluid["center"];
+				float radius = fluid["radius"];
+				sphere_fluid.emplace_back(float3(center[0], center[1], center[2]), radius);
+			}
 		}
 	}
 }
