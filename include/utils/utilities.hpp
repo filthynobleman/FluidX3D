@@ -4358,6 +4358,11 @@ inline void write_stl(const std::string& filename, const Mesh* mesh){
     //write down every triangle
     for (uint i = 0; i < mesh->triangle_number; i++){
 
+        //junk fill normals
+        myfile.write((char*)&(mesh->p0[i].x), 4);
+        myfile.write((char*)&(mesh->p0[i].y), 4);
+        myfile.write((char*)&(mesh->p0[i].z), 4);
+
         //p0 coordinates
         myfile.write((char*)&(mesh->p0[i].x), 4);
         myfile.write((char*)&(mesh->p0[i].y), 4);
