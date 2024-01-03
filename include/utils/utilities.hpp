@@ -4340,6 +4340,44 @@ inline Mesh* read_stl(const string& path, const float3& box_size, const float3& 
 inline Mesh* read_stl(const string& path, const float scale=1.0f, const float3x3& rotation=float3x3(1.0f), const float3& offset=float3(0.0f)) { // read binary .stl file (do not auto-rescale and auto-reposition)
 	return read_stl_raw(path, false, float3(1.0f), offset, rotation, -fabs(scale));
 }
+inline void write_stl(const std::string& filename, const Mesh* mesh){
+
+    //binary file
+    std::string header_info = "boundary " + filename + "-output";
+    char head[80];
+    std::strncpy(head, header_info.c_str(), sizeof(head)-1);
+    char attribute[2] = "0";
+    unsigned long n_tri_long = mesh->triangle_number;
+
+    std::ofstream myfile;
+
+    myfile.open(filename.c_str(), std::ios::out | std::ios::binary);
+    myfile.write(head, sizeof(head));
+    myfile.write((char*)&n_tri_long, 4);
+
+    //write down every triangle
+    for (uint i = 0; i < mesh->triangle_number; i++){
+
+        //p0 coordinates
+        myfile.write((char*)&(mesh->p0[i].x), 4);
+        myfile.write((char*)&(mesh->p0[i].y), 4);
+        myfile.write((char*)&(mesh->p0[i].z), 4);
+
+        //p1 coordinates
+        myfile.write((char*)&(mesh->p1[i].x), 4);
+        myfile.write((char*)&(mesh->p1[i].y), 4);
+        myfile.write((char*)&(mesh->p1[i].z), 4);
+
+        //p2 coordinates
+        myfile.write((char*)&(mesh->p2[i].x), 4);
+        myfile.write((char*)&(mesh->p2[i].y), 4);
+        myfile.write((char*)&(mesh->p2[i].z), 4);
+
+        myfile.write(attribute, 2);
+    }
+
+    myfile.close();
+}
 
 class Configuration_File {
 private:
