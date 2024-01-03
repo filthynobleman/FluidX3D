@@ -86,10 +86,11 @@ protected:
 
     };
 
-    std::vector<Cuboid> cuboid_obst;
-    std::vector<Sphere> sphere_obst;
-    std::vector<Cuboid> cuboid_fluid;
-    std::vector<Sphere> sphere_fluid;
+    std::vector<const Mesh*> mesh_obst;
+    std::vector<Cuboid>      cuboid_obst;
+    std::vector<Sphere>      sphere_obst;
+    std::vector<Cuboid>      cuboid_fluid;
+    std::vector<Sphere>      sphere_fluid;
 
 public:
 

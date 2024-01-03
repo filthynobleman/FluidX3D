@@ -16,41 +16,7 @@
 #include <fx3d/scenes.hpp>
 #include <utils/shapes.hpp>
 
-/*
-fx3d::LBM* fx3d::CollidingDropletsInit(const nlohmann::json& json)
-{
-    fx3d::Settings::EnableFeature(Feature::VOLUME_FORCE);
-    fx3d::Settings::EnableFeature(Feature::SURFACE);
-    fx3d::Settings::EnableFeature(Feature::FORCE_FIELD);
 
-    // ################################################################## define simulation box size, viscosity and volume force ###################################################################
-	fx3d::LBM* lbm = new fx3d::LBM(256u, 256u, 128u, 0.014f, 0.0f, 0.0f, 0.0f, 0.0001f);
-	// ###################################################################################### define geometry ######################################################################################
-	const uint Nx=lbm->get_Nx(), Ny=lbm->get_Ny(), Nz=lbm->get_Nz(); 
-    for(ulong n=0ull; n<lbm->get_N(); n++) 
-    { 
-        uint x=0u, y=0u, z=0u; lbm->coordinates(n, x, y, z);
-		if(sphere(x, y, z, lbm->center()-float3(0u, 10u, 0u), 32.0f)) 
-        {
-			lbm->flags[n] = TYPE_F;
-			lbm->u.y[n] = 0.025f;
-		}
-		if(sphere(x, y, z, lbm->center()+float3(30u, 40u, 0u), 12.0f)) 
-        {
-			lbm->flags[n] = TYPE_F;
-			lbm->u.y[n] = -0.2f;
-		}
-		lbm->F.x[n] = -0.001f*lbm->relative_position(n).x;
-		lbm->F.y[n] = -0.001f*lbm->relative_position(n).y;
-		lbm->F.z[n] = -0.0005f*lbm->relative_position(n).z;
-		if(x==0u||x==Nx-1u||y==0u||y==Ny-1u||z==0u||z==Nz-1u) 
-            lbm->flags[n] = TYPE_S; // all non periodic
-	} // ######################################################################### run simulation, export images and data ##########################################################################
-	lbm->graphics.visualization_modes = lbm->get_D()==1u ? VIS_PHI_RAYTRACE : VIS_PHI_RASTERIZE;
-
-    return lbm;
-}
-*/
 
 
 bool fx3d::Scene::is_boundary(uint x, uint y, uint z) const {
@@ -246,7 +212,7 @@ void fx3d::Scene::config_obstacles(const nlohmann::json &config) {
 					float3(scale[0], scale[1], scale[2]), (float)obst["size"]
 				);
 				make_obstacle(geometry);
-				delete geometry;
+				mesh_obst.push_back(geometry);
 			} else if (type == "cuboid") {
 				std::vector<float> center = obst["center"];
 				std::vector<float> sides = obst["sides"];
