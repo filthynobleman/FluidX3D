@@ -123,6 +123,8 @@ void fx3d::Scene::configure(const nlohmann::json &config) {
 
 	this->lbm = new LBM(Nx, Ny, Nz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
 
+	config_units(config);
+
 	/* Obstacles and fluid bodies */
 
 	config_obstacles(config);
@@ -288,6 +290,10 @@ void fx3d::Scene::config_graphics(const nlohmann::json &config) {
 			fx3d::GraphicsSettings::SetFluidMaterial(MAT_WATER);
 		}
 	}
+}
+
+void fx3d::Scene::config_units(const nlohmann::json &config) {
+	return;
 }
 
 void fx3d::Scene::select_rendering_mode(const nlohmann::json &config) {

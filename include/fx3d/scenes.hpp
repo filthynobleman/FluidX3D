@@ -60,6 +60,7 @@ protected:
     virtual void config_fluid_bodies(const nlohmann::json &config);
     virtual void config_export(const nlohmann::json &config);
     virtual void config_graphics(const nlohmann::json &config);
+    virtual void config_units(const nlohmann::json &config);
     virtual void select_rendering_mode(const nlohmann::json &config);
     virtual void custom_grid_initialization();
 
