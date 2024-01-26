@@ -30,7 +30,7 @@ fx3d::LBM* CollidingDropletsInit(const nlohmann::json& json);
 
 class Scene {
 
-private:
+protected:
 
     /* Export */
     std::string out_dir = ".\\export";
@@ -45,8 +45,6 @@ private:
 	float fx = 0.0f, fy = 0.0f, fz = 0.0f;
 	uint particles_N = 0u;
 	float particles_rho = 0.0f;
-
-protected:
 
     LBM* lbm;
 
