@@ -105,6 +105,10 @@ bool fx3d::Scene::is_current_frame_output(const ulong sim_steps, const float out
 
 void fx3d::Scene::configure(const nlohmann::json &config) {
 
+	/* Units configuration */
+	
+	config_units(config);
+
 	/* Simulator features */
 
 	enable_features();
@@ -122,8 +126,6 @@ void fx3d::Scene::configure(const nlohmann::json &config) {
 	config_sim_params(config);
 
 	this->lbm = new LBM(Nx, Ny, Nz, nu, fx, fy, fz, sigma, alpha, beta, particles_N, particles_rho);
-
-	config_units(config);
 
 	/* Obstacles and fluid bodies */
 
